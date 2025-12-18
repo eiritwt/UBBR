@@ -2,16 +2,18 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Evolution Lab</title>
+    <title>Untitled Beebee Renderer</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
         .container { display: flex; flex-direction: column; gap: 12px; background: #222; padding: 15px; border-radius: 12px; width: 95%; max-width: 720px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { margin: 5px 0; font-size: 1.4em; color: #eee; }
         canvas { background: #333; border-radius: 8px; width: 100%; height: auto; border: 1px solid #444; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: span 2; }
         select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
         select:disabled { opacity: 0.3; color: #777; }
         .active { background: #e74c3c; border-color: #ff7675; font-weight: bold; }
+        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
         .share-btn { background: #2980b9; border: none; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
@@ -20,23 +22,27 @@
 </head>
 <body>
 
+    <h2>Untitled Beebee Renderer</h2>
+
     <div class="container">
         <canvas id="beebeeCanvas" width="720" height="500"></canvas>
         
         <div class="controls">
             <label class="full-width">Character Version</label>
             <select id="actSelect" class="full-width">
-                <option value="act1">Act 1: The Encounter (act1_beebee.png)</option>
-                <option value="act2">Act 2: The Battle (battle_bb.png)</option>
-                <option value="act3:">Act 3: The Fight (fight_bb.png)</option>
+                <option value="act1">Act 1: The Encounter</option>
+                <option value="act2">Act 2: The Battle</option>
+                <option value="act3">Act 3: The Fight</option>
             </select>
+
+            <button id="randomBtn" class="full-width random-btn">Randomize Expression</button>
 
             <hr class="full-width">
 
             <label class="full-width">Special Poses (*)</label>
             <select id="specialSelect" class="full-width"></select>
 
-            <label class="full-width">Manual Mix (Disabled if Special is active)</label>
+            <label class="full-width">Manual Mix</label>
             <select id="bodySelect"></select>
             <select id="mouthSelect"></select>
             <select id="eyesSelect" class="full-width"></select>
@@ -93,7 +99,7 @@ Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k
 
 const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect');
 const eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect');
-const aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn');
+const aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn');
 
 function populateSelects() {
     [bSel, mSel, eSel, sSel].forEach(s => s.innerHTML = '');
@@ -115,8 +121,6 @@ function populateSelects() {
 function updateSelectorsState() {
     const isSpecial = sSel.value !== 'none';
     [bSel, mSel, eSel].forEach(s => s.disabled = isSpecial);
-    
-    // Show/Hide Loop Button based on if the special frame has a loop defined
     const hasLoop = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = hasLoop ? 'block' : 'none';
     if(!hasLoop) stopLoop();
@@ -124,9 +128,23 @@ function updateSelectorsState() {
 
 function stopLoop() { isLooping = false; lBtn.classList.remove('active'); lBtn.textContent = "Start Animation Loop"; }
 
-aSel.onchange = (e) => { currentAct = e.target.value.split(':')[0]; populateSelects(); stopLoop(); };
+aSel.onchange = (e) => { currentAct = e.target.value; populateSelects(); stopLoop(); };
 sSel.onchange = () => { updateSelectorsState(); stopLoop(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); lBtn.textContent = isLooping ? "Stop Loop" : "Start Animation Loop"; };
+
+rBtn.onclick = () => {
+    stopLoop();
+    // 20% chance to pick a special pose, 80% chance for manual mix
+    if(Math.random() < 0.2 && sSel.options.length > 1) {
+        sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1;
+    } else {
+        sSel.value = 'none';
+        bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
+        mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length);
+        eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length);
+    }
+    updateSelectorsState();
+};
 
 function drawLayer(name) {
     const act = acts[currentAct];
@@ -139,7 +157,6 @@ function drawLayer(name) {
 function mainLoop(time) {
     const delta = (time - lastTime) / 1000;
     lastTime = time; ticker += delta;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -164,7 +181,6 @@ function mainLoop(time) {
         ctx.scale(1, squash);
         drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value);
     }
-
     ctx.restore();
     requestAnimationFrame(mainLoop);
 }
