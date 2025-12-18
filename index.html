@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beebee Mobile Lab</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
+        .container { display: flex; flex-direction: column; gap: 15px; background: #222; padding: 15px; border-radius: 10px; width: 95%; max-width: 720px; }
+        canvas { background: #333; border-radius: 5px; width: 100%; height: auto; touch-action: none; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .full-width { grid-column: span 2; }
+        select, button { padding: 12px; background: #444; color: white; border: 1px solid #666; border-radius: 6px; font-size: 14px; }
+        .active { background: #cc3333; border-color: #ff6666; }
+        .download-btn { background: #2ecc71; border: none; font-weight: bold; margin-top: 10px; }
+        label { font-size: 0.7em; color: #aaa; margin-bottom: -5px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <canvas id="beebeeCanvas" width="720" height="500"></canvas>
+        
+        <div class="controls">
+            <div style="display:contents">
+                <label class="full-width">BODY</label>
+                <select id="bodySelect" class="full-width"></select>
+                
+                <label>MOUTH</label>
+                <select id="mouthSelect"></select>
+                
+                <label>EYES</label>
+                <select id="eyesSelect"></select>
+            </div>
+            
+            <button id="panicBtn">Panic</button>
+            <button id="flailBtn">Flail</button>
+            
+            <button id="downloadBtn" class="full-width download-btn">Download Image</button>
+        </div>
+    </div>
+
+<script>
+const canvas = document.getElementById('beebeeCanvas');
+const ctx = canvas.getContext('2d');
+const img = new Image();
+img.src = 'act1_beebee.png';
+
+// Config from Act1_Beebee.js
+const FRAME_W = 720;
+const FRAME_H = 500;
+const COLUMNS = 4;
+const ANCHOR_X = 546 / 2; //
+const ANCHOR_Y = 400 / 2; //
+
+const frameNames = [
+    "body_normal", "body_fear", "body_point_crotch", "body_point_heart", "body_sing",
+    "mouth_normal", "mouth_normal_talk", "mouth_small", "mouth_small_talk", "mouth_small_lock",
+    "eyes_normal", "eyes_normal_right", "eyes_uncertain", "eyes_uncertain_right", "eyes_narrow",
+    "eyes_narrow_eyebrow", "eyes_fear", "eyes_pretty", "eyes_wat", "eyes_wat_2",
+    "body_panic*", "body_panic_2*", "body_scream_anger*", "body_scream_anger_2*",
+    "body_scream*", "body_scream_2*", "body_flail*", "body_flail2*", "body_flail3*", "body_flail4*",
+    "mouth_smile", "mouth_smile_talk", "mouth_smile_lock", "eyes_smile", "eyes_look",
+    "eyes_look_sad", "eyes_look_sad_smile", "eyes_pained1", "eyes_pained2", "mouth_shut",
+    "eyes_anger", "body_meta*", "body_laugh*", "body_pride_talk*", "body_pride*",
+    "body_squeeze_talk*", "body_squeeze*"
+]; //
+
+// Setup Selects
+const bSel = document.getElementById('bodySelect');
+const mSel = document.getElementById('mouthSelect');
+const eSel = document.getElementById('eyesSelect');
+
+frameNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name.startsWith('body')) bSel.appendChild(opt);
+    else if (name.startsWith('mouth')) mSel.appendChild(opt);
+    else if (name.startsWith('eyes')) eSel.appendChild(opt);
+});
+
+let state = { isPanic: false, isFlail: false, panicFrame: 0, flailFrame: 0, animTimer: 0, ticker: 0, lastTime: 0 };
+
+document.getElementById('panicBtn').onclick = () => { state.isPanic = !state.isPanic; state.isFlail = false; };
+document.getElementById('flailBtn').onclick = () => { state.isFlail = !state.isFlail; state.isPanic = false; };
+
+// DOWNLOAD LOGIC
+document.getElementById('downloadBtn').onclick = () => {
+    const link = document.createElement('a');
+    link.download = `beebee_${Date.now()}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+};
+
+function drawLayer(name) {
+    const idx = frameNames.indexOf(name);
+    if (idx === -1) return;
+    const col = idx % COLUMNS;
+    const row = Math.floor(idx / COLUMNS);
+    ctx.drawImage(img, col*FRAME_W, row*FRAME_H, FRAME_W, FRAME_H, -ANCHOR_X, -ANCHOR_Y, FRAME_W, FRAME_H);
+}
+
+function mainLoop(time) {
+    const delta = (time - state.lastTime) / 1000;
+    state.lastTime = time;
+    state.animTimer += delta;
+    state.ticker += delta;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+
+    let squash = 1 + Math.sin(state.ticker * Math.PI * 2 * 7) * 0.01; //
+    
+    if (state.isPanic) {
+        if (state.animTimer >= 0.07) { state.panicFrame = (state.panicFrame + 1) % 2; state.animTimer = 0; }
+        ctx.scale(1, squash);
+        drawLayer(state.panicFrame === 0 ? "body_panic*" : "body_panic_2*");
+    } else if (state.isFlail) {
+        if (state.animTimer >= 0.05) { state.flailFrame = (state.flailFrame + 1) % 4; state.animTimer = 0; }
+        ctx.scale(1, squash);
+        drawLayer(["body_flail*", "body_flail2*", "body_flail3*", "body_flail4*"][state.flailFrame]);
+    } else {
+        const b = bSel.value;
+        if (b.includes("squeeze")) squash = 1; //
+        ctx.scale(1, squash);
+        drawLayer(b); drawLayer(mSel.value); drawLayer(eSel.value);
+    }
+    ctx.restore();
+    requestAnimationFrame(mainLoop);
+}
+
+img.onload = () => requestAnimationFrame(mainLoop);
+</script>
+</body>
+</html>e_talk*" || b === "body_squeeze*") squash = 1;
+        
+        ctx.scale(1, squash);
+        drawLayer(b);
+        drawLayer(mSel.value);
+        drawLayer(eSel.value);
+    }
+
+    ctx.restore();
+    requestAnimationFrame(mainLoop);
+}
+
+img.onload = () => requestAnimationFrame(mainLoop);
+</script>
+</body>
+</html>
