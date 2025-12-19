@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Untitled Beebee Renderer - Logic Polished</title>
+    <title>Beebee Renderer - Logic Finalized</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -165,28 +165,25 @@ function updateUI() {
     [bSel, mSel, eSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = false));
 
     if (!isSpecial && !unrestricted) {
-        // 1. JUDGE LOCK PRIORITY
+        // 1. JUDGE LOCK PRIORITY (Blocks Cry AND Right-oriented assets)
         if (isAct2 && (isJudge(bodyVal) || isJudge(eyesVal))) { 
             if (!isJudge(bodyVal)) bSel.value = 'body_judge_1';
             if (!isJudge(eyesVal)) eSel.value = 'eyes_judge';
             
-            // In Judge mode, absolutely no Cry mouth allowed
-            if (isHardCry(mouthVal)) mSel.value = 'mouth_normal';
+            // If user has a restricted mouth (Cry or Right), reset to normal
+            if (isHardCry(mouthVal) || isRight(mouthVal)) mSel.value = 'mouth_normal';
 
             eSel.disabled = true;
-            // Disable Cry assets from appearing in other dropdowns while Judge is active
-            Array.from(mSel.options).forEach(o => { if(isHardCry(o.value)) o.disabled = true; });
+            // Filter both Cry and Right assets from being selectable
+            Array.from(mSel.options).forEach(o => { if(isHardCry(o.value) || isRight(o.value)) o.disabled = true; });
             Array.from(bSel.options).forEach(o => { if(isHardCry(o.value)) o.disabled = true; });
         } 
-        // 2. HARD CRY LOCK: Only locks if one is ACTIVELY selected and NOT in Judge mode
+        // 2. HARD CRY LOCK
         else if (isAct2 && (isHardCry(bodyVal) || isHardCry(mouthVal) || isHardCry(eyesVal))) {
             if(!isHardCry(bodyVal)) bSel.value = 'body_cry_6';
             if(!isHardCry(eSel.value)) eSel.value = 'eyes_cry';
             if(!isHardCry(mSel.value)) mSel.value = 'mouth_cry';
-            
-            [eSel, mSel, bSel].forEach(s => Array.from(s.options).forEach(o => {
-                o.disabled = !isHardCry(o.value);
-            }));
+            [eSel, mSel, bSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = !isHardCry(o.value)));
         } 
         // 3. RIGHT ORIENTATION LOCK
         else if (isRight(mouthVal)) {
@@ -194,9 +191,9 @@ function updateUI() {
             Array.from(eSel.options).forEach(o => o.disabled = !isRight(o.value));
         }
         else {
-            // General preventative: can't pick judge or hard cry parts while normal
+            // General preventative
             Array.from(eSel.options).forEach(o => o.disabled = (isJudge(o.value) || isHardCry(o.value)));
-            Array.from(mSel.options).forEach(o => o.disabled = isHardCry(o.value));
+            Array.from(mSel.options).forEach(o => o.disabled = (isHardCry(o.value) || (isAct2 && isRight(o.value))));
             Array.from(bSel.options).forEach(o => o.disabled = isHardCry(o.value));
         }
     }
@@ -232,7 +229,6 @@ rBtn.onclick = () => {
     stopLoop(); 
     sSel.value = 'none';
     [bSel, mSel, eSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = false));
-    
     [bSel, mSel, eSel].forEach(s => { 
         s.value = s.options[Math.floor(Math.random() * s.options.length)].value;
     });
