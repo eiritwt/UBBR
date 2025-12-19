@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Untitled Beebee Renderer</title>
+    <title>Beebee Renderer - Fixed Act 2 & 4</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -125,40 +125,71 @@ function loadState() {
 function populateSelects(shouldSave = true) {
     [bSel, mSel, eSel, sSel].forEach(s => s.innerHTML = '');
     const n = document.createElement('option'); n.value = 'none'; n.textContent = '-- Manual Mix --'; sSel.appendChild(n);
+    
+    // Check if the act has a "blank" frame available
+    const hasBlankMouth = acts[currentAct].frames.includes("mouth_blank");
+    const hasBlankEyes = acts[currentAct].frames.includes("eyes_blank");
+
     acts[currentAct].frames.forEach(name => {
         const o = document.createElement('option'); o.value = name; o.textContent = name;
-        if (name.includes('*')) sSel.appendChild(o); else if (name.startsWith('body')) bSel.appendChild(o); else if (name.startsWith('mouth')) mSel.appendChild(o); else if (name.startsWith('eyes')) eSel.appendChild(o);
+        if (name.includes('*')) sSel.appendChild(o); 
+        else if (name.startsWith('body')) bSel.appendChild(o); 
+        else if (name.startsWith('mouth')) mSel.appendChild(o); 
+        else if (name.startsWith('eyes')) eSel.appendChild(o);
     });
+
     updateUI(); if(shouldSave) saveState();
 }
 
 function updateUI() {
     const isSpecial = sSel.value !== 'none';
-    const isAct4Convo = currentAct === 'act4_convo';
+    const act = acts[currentAct];
+    
+    // Act 2/4 have multi-layer logic
+    const isMultiLayer = currentAct === 'act4_convo' || currentAct === 'act2';
+    
     bSel.disabled = isSpecial; 
-    mSel.disabled = isSpecial || (!isAct4Convo && currentAct !== 'act1' && currentAct !== 'act2'); 
-    eSel.disabled = isSpecial || (!isAct4Convo && currentAct !== 'act1' && currentAct !== 'act2' && currentAct !== 'act3');
-    cBtn.style.display = isAct4Convo ? 'block' : 'none';
-    const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
+    mSel.disabled = isSpecial || (!isMultiLayer && currentAct !== 'act1'); 
+    eSel.disabled = isSpecial || (!isMultiLayer && currentAct !== 'act1');
+    
+    cBtn.style.display = (currentAct === 'act4_convo') ? 'block' : 'none';
+    
+    const hasL = act.loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
+    
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
     fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn active" : "flip-btn";
     cBtn.textContent = coneOn ? "Cone: ON" : "Cone: OFF"; cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
     dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
 }
 
-// FIXED RANDOMIZER: Now accounts for Act 4 specific layers
 rBtn.onclick = () => {
     stopLoop();
     sSel.value = 'none';
-    const sels = [bSel, mSel, eSel];
-    sels.forEach(s => { if(s.options.length > 0) s.selectedIndex = Math.floor(Math.random() * s.options.length); });
+    [bSel, mSel, eSel].forEach(s => { if(s.options.length > 0) s.selectedIndex = Math.floor(Math.random() * s.options.length); });
+    
+    // Special check for Act 2 Judge frames during randomization
+    if(currentAct === 'act2' && bSel.value.includes('judge')) {
+        mSel.value = 'mouth_blank';
+        eSel.value = 'eyes_blank';
+    }
+
     if(currentAct === 'act4_convo') coneOn = Math.random() > 0.5;
     updateUI(); saveState();
 };
 
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
-[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { stopLoop(); updateUI(); saveState(); });
+
+// Detect "Judge" body selection to auto-clear face
+bSel.onchange = () => {
+    if(currentAct === 'act2' && bSel.value.includes('judge')) {
+        mSel.value = 'mouth_blank';
+        eSel.value = 'eyes_blank';
+    }
+    updateUI(); saveState();
+};
+
+[sSel, mSel, eSel].forEach(el => el.onchange = () => { stopLoop(); updateUI(); saveState(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
 fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
 cBtn.onclick = () => { coneOn = !coneOn; updateUI(); saveState(); };
@@ -189,14 +220,12 @@ function mainLoop(time) {
             frameToDraw = loop.sequence[animIndex];
             currentAnimIndex = animIndex;
         }
-    } else if (frameToDraw.includes("yap")) {
-        const match = frameToDraw.match(/yap_(\d)/);
-        if(match) currentAnimIndex = parseInt(match[1]) - 1;
     }
     
     let squash = (vibrateOn) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
     ctx.scale(1, squash);
 
+    // Dynamic layer ordering based on character state
     const layers = acts[currentAct].layers || ["body", "mouth", "eyes"];
     layers.forEach(l => {
         let activeFrame = frameToDraw !== 'none' ? frameToDraw : null;
