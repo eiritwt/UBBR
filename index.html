@@ -1,269 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Renderer - Judge & Act 4 Sync</title>
+    <title>Beebee Optimized Renderer</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
-        h2 { margin: 10px 0; font-size: 1.4em; color: #eee; text-align: center; }
-        .app-layout { display: flex; flex-direction: column; gap: 15px; background: #222; padding: 15px; border-radius: 12px; width: 95%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .canvas-container { flex: 1.5; position: relative; display: flex; justify-content: center; }
-        canvas { background: #333; border-radius: 8px; width: 100%; max-width: 720px; height: auto; border: 1px solid #444; }
-        .controls-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .grid-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .full-width { grid-column: span 2; }
-        @media (min-width: 900px) { .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; } .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; } }
-        select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; }
-        .active { background: #e74c3c !important; font-weight: bold; }
-        .vibrate-btn.on { background: #9b59b6 !important; }
-        .flip-btn.active { background: #3498db !important; }
-        .cone-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; }
-        .cone-btn.on { background: #3498db !important; border-color: #5dade2; }
-        .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
+        :root { --bg: #1a1a1a; --panel: #222; --accent: #e74c3c; --btn: #3d3d3d; --text: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
+        .app-layout { display: flex; flex-direction: column; gap: 15px; background: var(--panel); padding: 20px; border-radius: 12px; width: 95%; max-width: 1100px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .canvas-wrap { flex: 1.5; position: relative; background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; }
+        canvas { max-width: 100%; height: auto; image-rendering: pixelated; }
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 80vh; padding-right: 5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        select, button { padding: 12px; background: var(--btn); color: white; border: 1px solid #444; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        button:hover { background: #4d4d4d; }
+        button.active { background: var(--accent); border-color: #ff6b6b; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
-        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; }
-        #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
-        label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
-        hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
+        .random-btn { background: #f39c12; color: #000; font-weight: bold; }
+        label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: -5px; }
+        #status { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; display: none; z-index: 10; color: #f1c40f; }
+        @media (min-width: 900px) { .app-layout { flex-direction: row; } }
     </style>
 </head>
 <body>
 
-    <h2>Untitled Beebee Renderer</h2>
-
     <div class="app-layout">
-        <div class="canvas-container">
-            <canvas id="beebeeCanvas" width="720" height="500"></canvas>
-            <div id="status">GENERATING GIF... PLEASE WAIT</div>
+        <div class="canvas-wrap">
+            <div id="status">PROCESSING GIF...</div>
+            <canvas id="c" width="720" height="500"></canvas>
         </div>
         
-        <div class="controls-panel">
-            <label>Character Version</label>
-            <select id="actSelect">
-                <option value="act1">Act 1: The Encounter</option>
-                <option value="act2">Act 2: The Battle</option>
-                <option value="act3">Act 3: The Fight</option>
-                <option value="act4_convo">Act 4: Conversation</option>
-            </select>
+        <div class="controls">
+            <label>Version</label>
+            <select id="act"></select>
 
-            <div class="grid-controls">
-                <button id="randomBtn" class="random-btn">Randomize</button>
-                <button id="vibeToggle" class="vibrate-btn">Vibration: OFF</button>
-                <button id="flipToggle" class="flip-btn">Flip: OFF</button>
-                <button id="coneToggle" class="cone-btn">Cone: OFF</button>
+            <div class="grid">
+                <button id="rand" class="random-btn">Randomize</button>
+                <button id="vibe">Vibe: OFF</button>
+                <button id="flip">Flip: OFF</button>
+                <button id="cone">Cone: OFF</button>
             </div>
 
-            <hr>
+            <hr style="border:0; border-top:1px solid #333; width:100%">
 
-            <label>Special Poses (*)</label>
-            <select id="specialSelect"></select>
+            <label>Special Pose (*)</label>
+            <select id="spec"></select>
 
-            <div class="grid-controls">
-                <div style="display:flex; flex-direction:column;">
+            <div class="grid">
+                <div style="display:flex; flex-direction:column; gap:5px;">
                     <label>Body</label>
-                    <select id="bodySelect" style="width:100%"></select>
+                    <select id="body"></select>
                 </div>
-                <div style="display:flex; flex-direction:column;">
-                    <label id="eyesLabel">Eyes</label>
-                    <select id="eyesSelect" style="width:100%"></select>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <label>Eyes</label>
+                    <select id="eyes"></select>
                 </div>
             </div>
             
             <label>Mouth</label>
-            <select id="mouthSelect"></select>
+            <select id="mouth"></select>
 
-            <hr>
-            
-            <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
-            <button id="mainDownloadBtn" class="download-btn">Download Image</button>
-            <button id="resetBtn" class="reset-btn">Reset All Settings</button>
+            <button id="loop" style="display:none">Loop Animation</button>
+            <button id="dl" class="download-btn">Download PNG</button>
         </div>
     </div>
 
 <script>
-const acts = {
-    act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, frame: { w: 720, h: 500 }, frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }] },
-    act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frame: { w: 720, h: 500 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }] },
-    act3: { src: 'fight_bb.png', grid: { width: 8 }, anchor: { x: 270, y: 223 }, frame: { w: 720, h: 500 }, frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: [] },
-    act4_convo: { 
-        src: 'bb_convo.png', 
-        grid: { width: 8 }, 
-        anchor: { x: 171, y: 242 }, 
-        frame: { w: 500, h: 500 }, 
-        layers: ["coneb", "body", "mouth", "eyes", "cone"], 
-        frames: [
-            "body_normal", "body_chest", "body_two_up", "body_one_up", "body_paw", "cone_normal", "coneb_normal", "mouth_normal",
-            "mouth_normal_talk", "mouth_narrow", "mouth_narrow_talk", "mouth_smile", "mouth_smile_talk", "mouth_scream", "mouth_scream_talk", "cone_scream",
-            "coneb_scream", "eyes_normal", "eyes_normal_r", "eyes_normal_u", "eyes_normal_d", "eyes_look_down", "eyes_scream", "eyes_scream_sad",
-            "eyes_super_sad", "eyes_closed", "eyes_closed_annoyed", "eyes_sexy", "eyes_smile", "eyes_smile_r", "eyes_smile_u", "eyes_smile_d",
-            "eyes_angry", "eyes_angry_r", "eyes_angry_u", "eyes_angry_d", "eyes_surprise", "eyes_surprise_r", "eyes_surprise_u", "eyes_surprise_d",
-            "eyes_annoyed", "eyes_annoyed_r", "eyes_annoyed_u", "eyes_annoyed_d", "eyes_sad", "eyes_sad_r", "eyes_sad_u", "eyes_sad_d",
-            "eyes_suspect", "eyes_suspect_r", "body_karate_1*", "body_karate_2*", "cone_karate", "coneb_karate", "body_yap_1*", "body_yap_2*",
-            "body_yap_3*", "body_yap_4*", "cone_yap_1", "cone_yap_2", "cone_yap_3", "cone_yap_4", "eyes_blank", "mouth_blank", "coneb_blank"
-        ], 
-        loops: [
-            { trigger: "yap*", sequence: ["body_yap_1*", "body_yap_2*", "body_yap_3*", "body_yap_4*"], wait: 1/24 }, 
-            { trigger: "karate*", sequence: ["body_karate_1*", "body_karate_2*"], wait: 0.25 }
-        ] 
-    }
+const DATA = {
+    act1: { src: 'act1_beebee.png', grid: 4, anchor: [273, 200], dim: [720, 500], frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: { "panic*": [0.07, ["body_panic*", "body_panic_2*"]], "scream*": [0.1, ["body_scream*", "body_scream_2*"]] } },
+    act2: { src: 'battle_bb.png', grid: 10, anchor: [292.5, 249.4], dim: [720, 500], frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: { "final*": [0.05, ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"]] } },
+    act3: { src: 'fight_bb.png', grid: 8, anchor: [270, 223], dim: [720, 500], frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: {} },
+    act4: { src: 'bb_convo.png', grid: 8, anchor: [171, 242], dim: [500, 500], layers: ["coneb", "body", "mouth", "eyes", "cone"], frames: ["body_normal", "body_chest", "body_two_up", "body_one_up", "body_paw", "cone_normal", "coneb_normal", "mouth_normal", "mouth_normal_talk", "mouth_narrow", "mouth_narrow_talk", "mouth_smile", "mouth_smile_talk", "mouth_scream", "mouth_scream_talk", "cone_scream", "coneb_scream", "eyes_normal", "eyes_normal_r", "eyes_normal_u", "eyes_normal_d", "eyes_look_down", "eyes_scream", "eyes_scream_sad", "eyes_super_sad", "eyes_closed", "eyes_closed_annoyed", "eyes_sexy", "eyes_smile", "eyes_smile_r", "eyes_smile_u", "eyes_smile_d", "eyes_angry", "eyes_angry_r", "eyes_angry_u", "eyes_angry_d", "eyes_surprise", "eyes_surprise_r", "eyes_surprise_u", "eyes_surprise_d", "eyes_annoyed", "eyes_annoyed_r", "eyes_annoyed_u", "eyes_annoyed_d", "eyes_sad", "eyes_sad_r", "eyes_sad_u", "eyes_sad_d", "eyes_suspect", "eyes_suspect_r", "body_karate_1*", "body_karate_2*", "cone_karate", "coneb_karate", "body_yap_1*", "body_yap_2*", "body_yap_3*", "body_yap_4*", "cone_yap_1", "cone_yap_2", "cone_yap_3", "cone_yap_4", "eyes_blank", "mouth_blank", "coneb_blank"], loops: { "yap*": [1/24, ["body_yap_1*", "body_yap_2*", "body_yap_3*", "body_yap_4*"]], "karate*": [0.25, ["body_karate_1*", "body_karate_2*"]] } }
 };
 
-const canvas = document.getElementById('beebeeCanvas'), ctx = canvas.getContext('2d');
-let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false, coneOn = false;
-const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
-const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), cBtn = document.getElementById('coneToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
+const UI = {
+    act: document.getElementById('act'),
+    spec: document.getElementById('spec'),
+    body: document.getElementById('body'),
+    eyes: document.getElementById('eyes'),
+    mouth: document.getElementById('mouth'),
+    vibe: document.getElementById('vibe'),
+    flip: document.getElementById('flip'),
+    cone: document.getElementById('cone'),
+    loop: document.getElementById('loop'),
+    dl: document.getElementById('dl'),
+    rand: document.getElementById('rand'),
+    status: document.getElementById('status'),
+    c: document.getElementById('c'),
+    ctx: document.getElementById('c').getContext('2d', { alpha: true })
+};
 
-function populateSelects() {
-    [bSel, mSel, eSel, sSel].forEach(s => s.innerHTML = '');
-    const n = document.createElement('option'); n.value = 'none'; n.textContent = '-- Manual Mix --'; sSel.appendChild(n);
+let state = { act: 'act1', vibe: false, flip: false, cone: false, looping: false, frameIdx: 0, timer: 0, lastUpdate: 0, images: {} };
+
+// PRELOAD ASSETS
+Object.keys(DATA).forEach(key => {
+    state.images[key] = new Image();
+    state.images[key].src = DATA[key].src;
+    const opt = document.createElement('option'); opt.value = key; opt.textContent = key.toUpperCase();
+    UI.act.appendChild(opt);
+});
+
+function syncUI() {
+    const act = DATA[state.act];
+    [UI.spec, UI.body, UI.eyes, UI.mouth].forEach(s => s.innerHTML = '');
     
-    acts[currentAct].frames.forEach(name => {
-        // BLANK IS INTERNAL ONLY
-        if (name.includes("blank")) return;
+    const none = document.createElement('option'); none.value = 'none'; none.textContent = '-- Manual --';
+    UI.spec.appendChild(none);
 
-        const o = document.createElement('option'); o.value = name; o.textContent = name;
-        if (name.includes('*')) sSel.appendChild(o); 
-        else if (name.startsWith('body')) bSel.appendChild(o); 
-        else if (name.startsWith('mouth')) mSel.appendChild(o); 
-        else if (name.startsWith('eyes')) eSel.appendChild(o);
+    act.frames.forEach(f => {
+        if(f.includes('blank')) return;
+        const o = document.createElement('option'); o.value = o.textContent = f;
+        if(f.includes('*')) UI.spec.appendChild(o);
+        else if(f.startsWith('body')) UI.body.appendChild(o);
+        else if(f.startsWith('eyes')) UI.eyes.appendChild(o);
+        else if(f.startsWith('mouth')) UI.mouth.appendChild(o);
     });
-    updateUI();
+
+    UI.cone.style.display = state.act === 'act4' ? 'block' : 'none';
+    refresh();
 }
 
-function updateUI() {
-    const isSpecial = sSel.value !== 'none';
-    const isAct4 = currentAct === 'act4_convo';
-    const isAct2 = currentAct === 'act2';
+function refresh() {
+    const isSpec = UI.spec.value !== 'none';
+    UI.body.disabled = isSpec;
+    UI.eyes.disabled = isSpec || (state.act === 'act2' && UI.body.value.includes('judge'));
+    UI.mouth.disabled = isSpec;
 
-    bSel.disabled = isSpecial;
-    // Allow Mouth/Eyes mix for Acts 1, 2, 4. Act 3 is Body-only.
-    mSel.disabled = isSpecial || (!isAct4 && !isAct2 && currentAct !== 'act1'); 
-    eSel.disabled = isSpecial || (!isAct4 && !isAct2 && currentAct !== 'act1');
+    if(state.act === 'act2' && UI.body.value.includes('judge') && !isSpec) UI.eyes.value = 'eyes_judge';
 
-    // WIG LOGIC: If selecting judge body, lock eyes to show wig, but KEEP mouth open
-    if (isAct2 && bSel.value.includes('judge') && !isSpecial) {
-        eSel.value = 'eyes_judge';
-        eSel.disabled = true; 
-        mSel.disabled = false; // Mouth stays available
-    }
-
-    cBtn.style.display = isAct4 ? 'block' : 'none';
-    const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
-    lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
+    const loopData = Object.entries(DATA[state.act].loops).find(([k]) => UI.spec.value.includes(k.replace('*','')));
+    state.activeLoop = loopData ? loopData[1] : (state.looping ? true : null);
+    UI.loop.style.display = state.activeLoop ? 'block' : 'none';
     
-    vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
-    fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn active" : "flip-btn";
-    cBtn.textContent = coneOn ? "Cone: ON" : "Cone: OFF"; cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
-    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
+    UI.vibe.className = state.vibe ? 'active' : '';
+    UI.flip.className = state.flip ? 'active' : '';
+    UI.cone.className = state.cone ? 'active' : '';
+    UI.dl.textContent = (state.vibe || state.activeLoop) ? "Download GIF" : "Download PNG";
 }
 
-rBtn.onclick = () => {
-    stopLoop(); sSel.value = 'none';
-    [bSel, mSel, eSel].forEach(s => { if(s.options.length > 0) s.selectedIndex = Math.floor(Math.random() * s.options.length); });
-    if(currentAct === 'act4_convo') coneOn = Math.random() > 0.5;
-    updateUI();
+UI.act.onchange = (e) => { state.act = e.target.value; syncUI(); };
+UI.spec.onchange = UI.body.onchange = refresh;
+UI.vibe.onclick = () => { state.vibe = !state.vibe; refresh(); };
+UI.flip.onclick = () => { state.flip = !state.flip; refresh(); };
+UI.cone.onclick = () => { state.cone = !state.cone; refresh(); };
+UI.loop.onclick = () => { state.looping = !state.looping; UI.loop.classList.toggle('active', state.looping); refresh(); };
+UI.rand.onclick = () => {
+    UI.spec.value = 'none';
+    [UI.body, UI.eyes, UI.mouth].forEach(s => s.selectedIndex = Math.floor(Math.random() * s.options.length));
+    if(state.act === 'act4') state.cone = Math.random() > 0.5;
+    refresh();
 };
 
-aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
-[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { stopLoop(); updateUI(); });
-vBtn.onclick = () => vibrateOn = !vibrateOn;
-fBtn.onclick = () => isFlipped = !isFlipped;
-cBtn.onclick = () => coneOn = !coneOn;
-lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); };
-
-function drawLayer(name) {
-    const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
-    const col = idx % act.grid.width, row = Math.floor(idx / act.grid.width);
-    const sw = act.frame.w, sh = act.frame.h;
-    ctx.drawImage(images[currentAct], col*sw, row*sh, sw, sh, -act.anchor.x, -act.anchor.y, sw, sh);
+function drawFrame(name) {
+    const d = DATA[state.act];
+    const i = d.frames.indexOf(name);
+    if(i === -1) return;
+    UI.ctx.drawImage(state.images[state.act], (i % d.grid) * d.dim[0], Math.floor(i / d.grid) * d.dim[1], d.dim[0], d.dim[1], -d.anchor[0], -d.anchor[1], d.dim[0], d.dim[1]);
 }
 
-function mainLoop(time) {
-    const delta = (time - lastTime) / 1000; lastTime = time; ticker += delta;
-    ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    if (isFlipped) ctx.scale(-1, 1);
-    
-    let frameToDraw = sSel.value;
-    let currentAnimIndex = animIndex;
+function render(t) {
+    const dt = (t - state.lastUpdate) / 1000; state.lastUpdate = t;
+    UI.ctx.clearRect(0, 0, UI.c.width, UI.c.height);
+    UI.ctx.save();
+    UI.ctx.translate(UI.c.width / 2, UI.c.height / 2);
+    if(state.flip) UI.ctx.scale(-1, 1);
+    if(state.vibe) UI.ctx.scale(1, 1 + Math.sin(t * 0.04) * 0.01);
 
-    if (isLooping) {
-        const loop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
-        if (loop) { 
-            animTimer += delta; 
-            if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } 
-            frameToDraw = loop.sequence[animIndex];
-            currentAnimIndex = animIndex;
-        }
+    let main = UI.spec.value !== 'none' ? UI.spec.value : null;
+    
+    if(Array.isArray(state.activeLoop)) {
+        state.timer += dt;
+        if(state.timer >= state.activeLoop[0]) { state.frameIdx = (state.frameIdx + 1) % state.activeLoop[1].length; state.timer = 0; }
+        main = state.activeLoop[1][state.frameIdx];
     }
-    
-    let squash = (vibrateOn) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
-    ctx.scale(1, squash);
 
-    const layers = acts[currentAct].layers || ["body", "mouth", "eyes"];
+    const layers = DATA[state.act].layers || ["body", "mouth", "eyes"];
     layers.forEach(l => {
-        let activeFrame = (frameToDraw !== 'none') ? frameToDraw : null;
-        
-        if (l === "coneb" || l === "cone") {
-            if (!coneOn) return;
+        if(l.startsWith('cone')) {
+            if(!state.cone) return;
             let type = "normal";
-            let pose = activeFrame || bSel.value || "";
-            if (pose.includes("yap")) type = "yap_" + (currentAnimIndex + 1);
-            else if (pose.includes("karate")) type = "karate";
-            else if (pose.includes("scream")) type = "scream";
-            let suffix = (l === "coneb" && (type.startsWith("yap") || type === "normal")) ? "blank" : type;
-            drawLayer(l + "_" + suffix);
-        } 
-        else if (l === "body") {
-            drawLayer(activeFrame || bSel.value);
-        }
-        else if (l === "mouth") {
-            // Internal Logic: If special pose is active, we don't draw separate mouth unless it's manual
-            if (activeFrame) {
-                // Special poses handle their own face
-            } else {
-                drawLayer(mSel.value);
-            }
-        }
-        else if (l === "eyes") {
-            if (activeFrame) {
-                // Special poses handle their own face
-            } else {
-                // If judge is active, it uses eSel.value (locked to eyes_judge by updateUI)
-                drawLayer(eSel.value);
-            }
-        }
+            const pose = main || UI.body.value;
+            if(pose.includes('yap')) type = "yap_" + (state.frameIdx + 1);
+            else if(pose.includes('karate')) type = "karate";
+            else if(pose.includes('scream')) type = "scream";
+            drawFrame(l + "_" + (l === "coneb" && (type === "normal" || type.startsWith('yap')) ? "blank" : type));
+        } else if(l === 'body') drawFrame(main || UI.body.value);
+        else if(l === 'mouth') drawFrame(main ? "mouth_blank" : UI.mouth.value);
+        else if(l === 'eyes') drawFrame(main ? "eyes_blank" : UI.eyes.value);
     });
 
-    ctx.restore(); requestAnimationFrame(mainLoop);
+    UI.ctx.restore();
+    requestAnimationFrame(render);
 }
 
-function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
-dBtn.onclick = () => {
-    if (dBtn.textContent === "Download PNG") {
-        const link = document.createElement('a'); link.download = `beebee.png`; link.href = canvas.toDataURL("image/png"); link.click();
-    } else { captureGif(); }
+UI.dl.onclick = async () => {
+    if(UI.dl.textContent.includes("PNG")) {
+        const a = document.createElement('a'); a.download = 'bb.png'; a.href = UI.c.toDataURL(); a.click();
+    } else {
+        UI.status.style.display = 'block';
+        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: 'https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js' });
+        for(let i=0; i<20; i++) { gif.addFrame(UI.ctx, {copy: true, delay: 50}); await new Promise(r => setTimeout(r, 50)); }
+        gif.on('finished', b => { UI.status.style.display = 'none'; const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'bb.gif'; a.click(); });
+        gif.render();
+    }
 };
 
-async function captureGif() {
-    statusTxt.style.display = 'block'; dBtn.disabled = true;
-    try {
-        const resp = await fetch('https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js');
-        const workerUrl = URL.createObjectURL(new Blob([await resp.text()], { type: 'application/javascript' }));
-        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: workerUrl });
-        for (let i = 0; i < 25; i++) { gif.addFrame(ctx, {copy: true, delay: 50}); await new Promise(r => setTimeout(r, 50)); }
-        gif.on('finished', (blob) => {
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee.gif`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            statusTxt.style.display = 'none'; dBtn.disabled = false;
-        });
-        gif.render();
-    } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
-}
-
-populateSelects();
-images['act1'].onload = () => requestAnimationFrame(mainLoop);
+syncUI();
+requestAnimationFrame(render);
 </script>
 </body>
 </html>
