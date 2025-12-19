@@ -5,63 +5,118 @@
     <title>Untitled Beebee Renderer</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
+        /* BASE STYLES (Mobile First) */
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
-        .container { display: flex; flex-direction: column; gap: 10px; background: #222; padding: 15px; border-radius: 12px; width: 95%; max-width: 720px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { margin: 5px 0; font-size: 1.4em; color: #eee; text-align: center; }
-        canvas { background: #333; border-radius: 8px; width: 100%; height: auto; border: 1px solid #444; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        h2 { margin: 10px 0; font-size: 1.4em; color: #eee; text-align: center; }
+
+        .app-layout { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            background: #222; 
+            padding: 15px; 
+            border-radius: 12px; 
+            width: 95%; 
+            max-width: 1200px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+
+        .canvas-container { flex: 1.5; position: relative; }
+        
+        canvas { 
+            background: #333; 
+            border-radius: 8px; 
+            width: 100%; 
+            height: auto; 
+            border: 1px solid #444; 
+            display: block;
+        }
+
+        .controls-panel { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+
+        .grid-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: span 2; }
-        select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; -webkit-appearance: none; }
-        select:disabled { opacity: 0.4; background: #111; color: #555; }
-        .active { background: #e74c3c !important; border-color: #ff7675; font-weight: bold; }
-        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; }
-        .download-btn { background: #27ae60; border: none; font-weight: bold; }
-        .vibrate-btn { background: #9b59b6; border: none; font-weight: bold; }
+
+        /* DESKTOP FRIENDLY LAYOUT (Triggered by Desktop View) */
+        @media (min-width: 900px) {
+            .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; }
+            .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; }
+            h2 { font-size: 1.8em; margin-bottom: 20px; }
+        }
+
+        /* FORM ELEMENTS */
+        select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; }
+        select:disabled { opacity: 0.4; background: #111; }
+        .active { background: #e74c3c !important; font-weight: bold; }
+        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; cursor: pointer; }
+        .download-btn { background: #27ae60; border: none; font-weight: bold; cursor: pointer; }
+        .vibrate-btn { background: #9b59b6; border: none; font-weight: bold; cursor: pointer; }
         #status { font-size: 0.8em; color: #f1c40f; text-align: center; display: none; padding: 5px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
-        hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 8px 0; }
+        hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
+        
+        /* Custom scrollbar for desktop panel */
+        .controls-panel::-webkit-scrollbar { width: 6px; }
+        .controls-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <h2>Untitled Beebee Renderer</h2>
 
-    <div class="container">
-        <canvas id="beebeeCanvas" width="720" height="500"></canvas>
-        <div id="status">PROCESSING... PLEASE WAIT</div>
+    <div class="app-layout">
+        <div class="canvas-container">
+            <canvas id="beebeeCanvas" width="720" height="500"></canvas>
+            <div id="status">PROCESSING GIF...</div>
+        </div>
         
-        <div class="controls">
-            <label class="full-width">Version</label>
-            <select id="actSelect" class="full-width">
+        <div class="controls-panel">
+            <label>Character Version</label>
+            <select id="actSelect">
                 <option value="act1">Act 1: The Encounter</option>
                 <option value="act2">Act 2: The Battle</option>
                 <option value="act3">Act 3: The Fight</option>
             </select>
 
-            <button id="randomBtn" class="full-width random-btn">Randomize</button>
-            <button id="vibeToggle" class="full-width vibrate-btn active">Vibration: ON</button>
+            <div class="grid-controls">
+                <button id="randomBtn" class="random-btn">Randomize</button>
+                <button id="vibeToggle" class="vibrate-btn active">Vibration: ON</button>
+            </div>
 
-            <hr class="full-width">
+            <hr>
 
-            <label class="full-width">Special Poses (*)</label>
-            <select id="specialSelect" class="full-width"></select>
+            <label>Special Poses (*)</label>
+            <select id="specialSelect"></select>
 
-            <label>Body</label>
-            <label id="eyesLabel">Eyes</label>
-            <select id="bodySelect"></select>
-            <select id="eyesSelect"></select>
+            <div class="grid-controls">
+                <div style="display:flex; flex-direction:column;">
+                    <label>Body</label>
+                    <select id="bodySelect" style="width:100%"></select>
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                    <label id="eyesLabel">Eyes</label>
+                    <select id="eyesSelect" style="width:100%"></select>
+                </div>
+            </div>
             
-            <label class="full-width">Mouth</label>
-            <select id="mouthSelect" class="full-width"></select>
+            <label>Mouth</label>
+            <select id="mouthSelect"></select>
 
-            <hr class="full-width">
+            <hr>
             
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
-            <button id="mainDownloadBtn" class="full-width download-btn">Download PNG</button>
+            <button id="mainDownloadBtn" class="download-btn">Download PNG</button>
         </div>
     </div>
 
 <script>
+// [Logic remains exactly the same as previous persistent version]
 const acts = {
     act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }, { trigger: "flail*", sequence: ["body_flail*", "body_flail2*", "body_flail3*", "body_flail4*"], wait: 0.05 }] },
     act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "scream_c*", sequence: ["body_scream_c_1*", "body_scream_c_2*"], wait: 0.07 }, { trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }, { trigger: "special_b*", sequence: ["body_special_b_1*", "body_special_b_2*", "body_special_b_3*"], wait: 0.1 }] },
@@ -74,72 +129,67 @@ let currentAct = 'act1';
 const images = {};
 let ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = true;
 
-// Preload
 Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
 
 const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-function populateSelects() {
+function saveState() { localStorage.setItem('beebee_renderer_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn })); }
+function loadState() {
+    const saved = localStorage.getItem('beebee_renderer_state');
+    if (!saved) return false;
+    const s = JSON.parse(saved);
+    currentAct = s.act; aSel.value = s.act; populateSelects(false);
+    sSel.value = s.special || 'none'; bSel.value = s.body || ''; eSel.value = s.eyes || ''; mSel.value = s.mouth || '';
+    vibrateOn = s.vibe !== undefined ? s.vibe : true;
+    updateUI(); return true;
+}
+
+function populateSelects(shouldSave = true) {
     [bSel, mSel, eSel, sSel].forEach(s => s.innerHTML = '');
-    const noneOpt = document.createElement('option'); noneOpt.value = 'none'; noneOpt.textContent = '-- Manual Mix --'; sSel.appendChild(noneOpt);
-    
+    const n = document.createElement('option'); n.value = 'none'; n.textContent = '-- Manual Mix --'; sSel.appendChild(n);
     acts[currentAct].frames.forEach(name => {
-        const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
-        if (name.includes('*')) sSel.appendChild(opt); 
-        else if (name.startsWith('body')) bSel.appendChild(opt); 
-        else if (name.startsWith('mouth')) mSel.appendChild(opt); 
-        else if (name.startsWith('eyes')) eSel.appendChild(opt);
+        const o = document.createElement('option'); o.value = name; o.textContent = name;
+        if (name.includes('*')) sSel.appendChild(o); else if (name.startsWith('body')) bSel.appendChild(o); else if (name.startsWith('mouth')) mSel.appendChild(o); else if (name.startsWith('eyes')) eSel.appendChild(o);
     });
-    updateUI();
+    updateUI(); if(shouldSave) saveState();
 }
 
 function updateUI() {
     const isSpecial = sSel.value !== 'none';
-    const isJudgeBody = bSel.value.includes('judge') && !isSpecial;
-    
-    if (isJudgeBody) { eSel.value = 'eyes_judge'; eSel.disabled = true; document.getElementById('eyesLabel').textContent = 'Eyes (Locked)'; }
+    const isJudge = bSel.value.includes('judge') && !isSpecial;
+    if (isJudge) { eSel.value = 'eyes_judge'; eSel.disabled = true; document.getElementById('eyesLabel').textContent = 'Eyes (Locked)'; }
     else { eSel.disabled = isSpecial; document.getElementById('eyesLabel').textContent = 'Eyes'; }
-
-    bSel.disabled = isSpecial;
-    mSel.disabled = isSpecial;
-    
-    const hasLoop = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
-    lBtn.style.display = (hasLoop || isLooping) ? 'block' : 'none';
-    
-    if (vibrateOn || isLooping) { dBtn.textContent = "Download GIF"; dBtn.className = "full-width vibrate-btn"; }
-    else { dBtn.textContent = "Download PNG"; dBtn.className = "full-width download-btn"; }
+    bSel.disabled = isSpecial; mSel.disabled = isSpecial;
+    const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
+    lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
+    vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.classList.toggle('active', vibrateOn);
+    if (vibrateOn || isLooping) { dBtn.textContent = "Download GIF"; dBtn.className = "download-btn vibrate-btn"; }
+    else { dBtn.textContent = "Download PNG"; dBtn.className = "download-btn"; }
 }
 
-vBtn.onclick = () => { vibrateOn = !vibrateOn; vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.classList.toggle('active', vibrateOn); updateUI(); };
-aSel.onchange = (e) => { currentAct = e.target.value; stopLoop(); populateSelects(); };
-sSel.onchange = () => { stopLoop(); updateUI(); };
-bSel.onchange = () => { updateUI(); };
-mSel.onchange = () => { updateUI(); };
-eSel.onchange = () => { updateUI(); };
-
+vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
+aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
+sSel.onchange = () => { stopLoop(); updateUI(); saveState(); };
+bSel.onchange = () => { updateUI(); saveState(); };
+mSel.onchange = () => { updateUI(); saveState(); };
+eSel.onchange = () => { updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
-
 function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
 
 rBtn.onclick = () => {
     stopLoop();
     if (Math.random() < 0.2) { sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1; }
     else {
-        sSel.value = 'none';
-        bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
-        if (bSel.value.includes('judge')) eSel.value = 'eyes_judge';
-        else eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length);
+        sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
+        if (bSel.value.includes('judge')) eSel.value = 'eyes_judge'; else eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length);
         mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length);
     }
-    updateUI();
+    updateUI(); saveState();
 };
 
 dBtn.onclick = () => {
     if (dBtn.textContent === "Download PNG") {
-        const link = document.createElement('a');
-        link.download = `beebee_${currentAct}_${Date.now()}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        const link = document.createElement('a'); link.download = `beebee_${Date.now()}.png`; link.href = canvas.toDataURL("image/png"); link.click();
     } else { captureGif(); }
 };
 
@@ -147,53 +197,37 @@ async function captureGif() {
     statusTxt.style.display = 'block'; dBtn.disabled = true;
     try {
         const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: 'https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js' });
-        for (let i = 0; i < 30; i++) {
-            gif.addFrame(ctx, {copy: true, delay: 40});
-            await new Promise(r => setTimeout(r, 40));
-        }
+        for (let i = 0; i < 30; i++) { gif.addFrame(ctx, {copy: true, delay: 40}); await new Promise(r => setTimeout(r, 40)); }
         gif.on('finished', (blob) => {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `beebee_anim.gif`;
-            link.click();
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee_anim.gif`; link.click();
             statusTxt.style.display = 'none'; dBtn.disabled = false;
         });
         gif.render();
-    } catch(e) { alert("GIF generation failed on this browser."); statusTxt.style.display = 'none'; dBtn.disabled = false; }
+    } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
 }
 
 function drawLayer(name) {
-    const act = acts[currentAct];
-    const idx = act.frames.indexOf(name);
-    if (idx === -1) return;
+    const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
     const col = idx % act.grid.width, row = Math.floor(idx / act.grid.width);
     ctx.drawImage(images[currentAct], col*720, row*500, 720, 500, -act.anchor.x, -act.anchor.y, 720, 500);
 }
 
 function mainLoop(time) {
-    const delta = (time - lastTime) / 1000;
-    lastTime = time; ticker += delta;
+    const delta = (time - lastTime) / 1000; lastTime = time; ticker += delta;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2);
-    
     let frameToDraw = sSel.value;
     if (isLooping) {
         const loop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
         if (loop) { animTimer += delta; if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } frameToDraw = loop.sequence[animIndex]; }
     }
-
     let squash = (vibrateOn && !frameToDraw.includes("squeeze") && !frameToDraw.includes("special_c")) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
     ctx.scale(1, squash);
-    
-    if (frameToDraw !== 'none') drawLayer(frameToDraw);
-    else { drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value); }
-    
-    ctx.restore();
-    requestAnimationFrame(mainLoop);
+    if (frameToDraw !== 'none') drawLayer(frameToDraw); else { drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value); }
+    ctx.restore(); requestAnimationFrame(mainLoop);
 }
 
-// Initial setup
-populateSelects();
+if (!loadState()) populateSelects();
 images['act1'].onload = () => requestAnimationFrame(mainLoop);
 </script>
 </body>
