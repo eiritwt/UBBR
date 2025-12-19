@@ -23,20 +23,25 @@
         select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; -webkit-appearance: none; cursor: pointer; }
         select:disabled { opacity: 0.4; background: #111; }
         
-        /* Button States */
         .active { background: #e74c3c !important; font-weight: bold; }
-        .vibrate-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; transition: background 0.2s; }
+        .vibrate-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; }
         .vibrate-btn.on { background: #9b59b6 !important; border-color: #af7ac5; }
+        
+        .flip-btn { background: #34495e; border: none; font-weight: bold; }
+        .flip-btn.active { background: #3498db !important; }
         
         .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
         .download-btn.gif-mode { background: #9b59b6; }
         
-        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; }
+        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; border-radius: 4px; }
         
         #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 10px; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
+
+        .credits { margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; text-align: center; font-size: 11px; color: #666; }
+        .credits a { color: #888; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -60,6 +65,7 @@
             <div class="grid-controls">
                 <button id="randomBtn" class="random-btn">Randomize</button>
                 <button id="vibeToggle" class="vibrate-btn">Vibration: OFF</button>
+                <button id="flipToggle" class="flip-btn full-width">Flip Horizontal: OFF</button>
             </div>
 
             <hr>
@@ -86,7 +92,11 @@
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
             <button id="mainDownloadBtn" class="download-btn">Download PNG</button>
             
-            <button id="resetBtn" class="reset-btn">Clear Saved Expression</button>
+            <button id="resetBtn" class="reset-btn">Reset All Settings</button>
+
+            <div class="credits">
+                Art by <a href="https://ncase.me/" target="_blank">Nicky Case</a>
+            </div>
         </div>
     </div>
 
@@ -97,23 +107,18 @@ const acts = {
     act3: { src: 'fight_bb.png', grid: { width: 8 }, anchor: { x: 270, y: 223 }, frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: [] }
 };
 
-const canvas = document.getElementById('beebeeCanvas');
-const ctx = canvas.getContext('2d');
-let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false;
+const canvas = document.getElementById('beebeeCanvas'), ctx = canvas.getContext('2d');
+let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false;
 
-// DEFAULT STATIC
-let vibrateOn = false; 
+const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
+const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-const images = {};
-Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
-
-const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
-
-function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn })); }
+function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn, flip: isFlipped })); }
 function loadState() {
     const saved = localStorage.getItem('beebee_state'); if (!saved) return false;
     const s = JSON.parse(saved); currentAct = s.act; aSel.value = s.act; populateSelects(false);
-    sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; vibrateOn = s.vibe;
+    sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; 
+    vibrateOn = s.vibe; isFlipped = s.flip || false;
     updateUI(); return true;
 }
 
@@ -135,35 +140,23 @@ function updateUI() {
     bSel.disabled = isSpecial; mSel.disabled = isSpecial;
     const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
-    
-    // Vibe Button Look
-    vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF";
-    vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
-
-    // Download Button Look
-    if (vibrateOn || isLooping) {
-        dBtn.textContent = "Download GIF";
-        dBtn.className = "download-btn gif-mode";
-    } else {
-        dBtn.textContent = "Download PNG";
-        dBtn.className = "download-btn";
-    }
+    vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
+    fBtn.textContent = isFlipped ? "Flip Horizontal: ON" : "Flip Horizontal: OFF"; fBtn.className = isFlipped ? "flip-btn full-width active" : "flip-btn full-width";
+    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG"; dBtn.className = (vibrateOn || isLooping) ? "download-btn gif-mode" : "download-btn";
 }
 
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
 [sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
+fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
 document.getElementById('resetBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
 rBtn.onclick = () => {
-    stopLoop();
-    if (Math.random() < 0.2) { sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1; }
-    else {
-        sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
+    stopLoop(); if (Math.random() < 0.2) { sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1; }
+    else { sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
         if (bSel.value.includes('judge')) eSel.value = 'eyes_judge'; else eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length);
-        mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length);
-    }
+        mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length); }
     updateUI(); saveState();
 };
 
@@ -191,6 +184,7 @@ async function captureGif() {
 }
 
 function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
+
 function drawLayer(name) {
     const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
     const col = idx % act.grid.width, row = Math.floor(idx / act.grid.width);
@@ -200,16 +194,28 @@ function drawLayer(name) {
 function mainLoop(time) {
     const delta = (time - lastTime) / 1000; lastTime = time; ticker += delta;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.save();
+    
+    // TRANSFORMATION START
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    
+    // FLIP LOGIC
+    if (isFlipped) ctx.scale(-1, 1);
+    
     let frameToDraw = sSel.value;
     if (isLooping) {
         const loop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
         if (loop) { animTimer += delta; if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } frameToDraw = loop.sequence[animIndex]; }
     }
+    
     let squash = (vibrateOn && !frameToDraw.includes("squeeze") && !frameToDraw.includes("special_c")) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
     ctx.scale(1, squash);
-    if (frameToDraw !== 'none') drawLayer(frameToDraw); else { drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value); }
-    ctx.restore(); requestAnimationFrame(mainLoop);
+    
+    if (frameToDraw !== 'none') drawLayer(frameToDraw); 
+    else { drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value); }
+    
+    ctx.restore();
+    requestAnimationFrame(mainLoop);
 }
 
 if (!loadState()) populateSelects();
