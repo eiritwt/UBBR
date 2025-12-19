@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Renderer - Act 4 Integrated</title>
+    <title>Untitled Beebee Renderer</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -13,7 +13,12 @@
         .controls-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .grid-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: span 2; }
-        @media (min-width: 900px) { .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; } .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; } }
+
+        @media (min-width: 900px) {
+            .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; }
+            .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; }
+        }
+
         select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; }
         .active { background: #e74c3c !important; font-weight: bold; }
         .vibrate-btn.on { background: #9b59b6 !important; }
@@ -23,6 +28,7 @@
         .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
         .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; }
+        
         #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
@@ -45,7 +51,6 @@
                 <option value="act2">Act 2: The Battle</option>
                 <option value="act3">Act 3: The Fight</option>
                 <option value="act4_convo">Act 4: Conversation</option>
-                <option value="act4_closer">Act 4: Closer</option>
             </select>
 
             <div class="grid-controls">
@@ -107,15 +112,6 @@ const acts = {
             { trigger: "yap*", sequence: ["body_yap_1*", "body_yap_2*", "body_yap_3*", "body_yap_4*"], wait: 1/24 }, 
             { trigger: "karate*", sequence: ["body_karate_1*", "body_karate_2*"], wait: 0.25 }
         ] 
-    },
-    act4_closer: { 
-        src: 'bb_closer.png', 
-        grid: { width: 8 }, 
-        anchor: { x: 171, y: 242 }, 
-        frame: { w: 500, h: 500 }, 
-        layers: ["body"], 
-        frames: ["body_normal","body_normal_2","body_normal_3","body_normal_4","body_normal_5","body_normal_6","body_normal_7","body_normal_8","body_normal_9","body_normal_10","body_normal_11","body_normal_12","body_normal_13","body_normal_14","body_normal_15","body_normal_16","body_normal_17","mouth_blank","body_normal_18","body_normal_19","body_normal_20","body_normal_21","eyes_blank","eyes_blank_2","eyes_blank_3","eyes_blank_4","eyes_blank_5","eyes_blank_6","eyes_blank_7","body_normal_22"], 
-        loops: [] 
     }
 };
 
