@@ -5,65 +5,32 @@
     <title>Untitled Beebee Renderer</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
-        /* BASE STYLES (Mobile First) */
+        /* BASE STYLES */
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
-        
         h2 { margin: 10px 0; font-size: 1.4em; color: #eee; text-align: center; }
-
-        .app-layout { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            background: #222; 
-            padding: 15px; 
-            border-radius: 12px; 
-            width: 95%; 
-            max-width: 1200px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
-
+        .app-layout { display: flex; flex-direction: column; gap: 15px; background: #222; padding: 15px; border-radius: 12px; width: 95%; max-width: 1200px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .canvas-container { flex: 1.5; position: relative; }
-        
-        canvas { 
-            background: #333; 
-            border-radius: 8px; 
-            width: 100%; 
-            height: auto; 
-            border: 1px solid #444; 
-            display: block;
-        }
-
-        .controls-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-        }
-
+        canvas { background: #333; border-radius: 8px; width: 100%; height: auto; border: 1px solid #444; display: block; }
+        .controls-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .grid-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: span 2; }
 
-        /* DESKTOP FRIENDLY LAYOUT (Triggered by Desktop View) */
         @media (min-width: 900px) {
             .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; }
             .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; }
-            h2 { font-size: 1.8em; margin-bottom: 20px; }
         }
 
-        /* FORM ELEMENTS */
-        select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; }
+        select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; -webkit-appearance: none; cursor: pointer; }
         select:disabled { opacity: 0.4; background: #111; }
         .active { background: #e74c3c !important; font-weight: bold; }
-        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; cursor: pointer; }
-        .download-btn { background: #27ae60; border: none; font-weight: bold; cursor: pointer; }
-        .vibrate-btn { background: #9b59b6; border: none; font-weight: bold; cursor: pointer; }
-        #status { font-size: 0.8em; color: #f1c40f; text-align: center; display: none; padding: 5px; font-weight: bold; }
+        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; }
+        .download-btn { background: #27ae60; border: none; font-weight: bold; }
+        .vibrate-btn { background: #9b59b6; border: none; font-weight: bold; }
+        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; }
+        
+        #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 10px; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
-        
-        /* Custom scrollbar for desktop panel */
-        .controls-panel::-webkit-scrollbar { width: 6px; }
-        .controls-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -73,7 +40,7 @@
     <div class="app-layout">
         <div class="canvas-container">
             <canvas id="beebeeCanvas" width="720" height="500"></canvas>
-            <div id="status">PROCESSING GIF...</div>
+            <div id="status">GENERATING GIF... PLEASE WAIT</div>
         </div>
         
         <div class="controls-panel">
@@ -112,11 +79,13 @@
             
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
             <button id="mainDownloadBtn" class="download-btn">Download PNG</button>
+            
+            <button id="resetBtn" class="reset-btn">Clear Saved Expression</button>
         </div>
     </div>
 
 <script>
-// [Logic remains exactly the same as previous persistent version]
+// Logic and Acts Data
 const acts = {
     act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }, { trigger: "flail*", sequence: ["body_flail*", "body_flail2*", "body_flail3*", "body_flail4*"], wait: 0.05 }] },
     act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "scream_c*", sequence: ["body_scream_c_1*", "body_scream_c_2*"], wait: 0.07 }, { trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }, { trigger: "special_b*", sequence: ["body_special_b_1*", "body_special_b_2*", "body_special_b_3*"], wait: 0.1 }] },
@@ -125,22 +94,17 @@ const acts = {
 
 const canvas = document.getElementById('beebeeCanvas');
 const ctx = canvas.getContext('2d');
-let currentAct = 'act1';
+let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = true;
 const images = {};
-let ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = true;
-
 Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
 
 const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-function saveState() { localStorage.setItem('beebee_renderer_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn })); }
+function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn })); }
 function loadState() {
-    const saved = localStorage.getItem('beebee_renderer_state');
-    if (!saved) return false;
-    const s = JSON.parse(saved);
-    currentAct = s.act; aSel.value = s.act; populateSelects(false);
-    sSel.value = s.special || 'none'; bSel.value = s.body || ''; eSel.value = s.eyes || ''; mSel.value = s.mouth || '';
-    vibrateOn = s.vibe !== undefined ? s.vibe : true;
+    const saved = localStorage.getItem('beebee_state'); if (!saved) return false;
+    const s = JSON.parse(saved); currentAct = s.act; aSel.value = s.act; populateSelects(false);
+    sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; vibrateOn = s.vibe;
     updateUI(); return true;
 }
 
@@ -163,18 +127,16 @@ function updateUI() {
     const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.classList.toggle('active', vibrateOn);
-    if (vibrateOn || isLooping) { dBtn.textContent = "Download GIF"; dBtn.className = "download-btn vibrate-btn"; }
-    else { dBtn.textContent = "Download PNG"; dBtn.className = "download-btn"; }
+    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
+    dBtn.className = (vibrateOn || isLooping) ? "download-btn vibrate-btn" : "download-btn";
 }
 
-vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
+// EVENTS
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
-sSel.onchange = () => { stopLoop(); updateUI(); saveState(); };
-bSel.onchange = () => { updateUI(); saveState(); };
-mSel.onchange = () => { updateUI(); saveState(); };
-eSel.onchange = () => { updateUI(); saveState(); };
+[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
+vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
-function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
+document.getElementById('resetBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
 rBtn.onclick = () => {
     stopLoop();
@@ -193,19 +155,40 @@ dBtn.onclick = () => {
     } else { captureGif(); }
 };
 
+// FIX: LOADING WORKER FROM BLOB TO BYPASS CROSS-ORIGIN SECURITY
 async function captureGif() {
     statusTxt.style.display = 'block'; dBtn.disabled = true;
     try {
-        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: 'https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js' });
-        for (let i = 0; i < 30; i++) { gif.addFrame(ctx, {copy: true, delay: 40}); await new Promise(r => setTimeout(r, 40)); }
+        const response = await fetch('https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js');
+        const workerBlob = new Blob([await response.text()], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
+        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: workerUrl });
+        
+        // Take 25 frames
+        for (let i = 0; i < 25; i++) {
+            gif.addFrame(ctx, {copy: true, delay: 50});
+            await new Promise(r => setTimeout(r, 50));
+        }
+
         gif.on('finished', (blob) => {
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee_anim.gif`; link.click();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `beebee_anim.gif`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             statusTxt.style.display = 'none'; dBtn.disabled = false;
+            URL.revokeObjectURL(workerUrl);
         });
         gif.render();
-    } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
+    } catch(e) { 
+        alert("GIF failed. Try using a browser like Chrome."); 
+        statusTxt.style.display = 'none'; dBtn.disabled = false; 
+    }
 }
 
+function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
 function drawLayer(name) {
     const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
     const col = idx % act.grid.width, row = Math.floor(idx / act.grid.width);
