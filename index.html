@@ -13,12 +13,7 @@
         .controls-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .grid-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: span 2; }
-
-        @media (min-width: 900px) {
-            .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; }
-            .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; }
-        }
-
+        @media (min-width: 900px) { .app-layout { flex-direction: row; align-items: flex-start; padding: 25px; } .controls-panel { max-height: 85vh; overflow-y: auto; padding-right: 5px; } }
         select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; cursor: pointer; }
         .active { background: #e74c3c !important; font-weight: bold; }
         .vibrate-btn.on { background: #9b59b6 !important; }
@@ -28,7 +23,6 @@
         .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
         .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; }
-        
         #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
@@ -142,8 +136,8 @@ function updateUI() {
     const isSpecial = sSel.value !== 'none';
     const isAct4Convo = currentAct === 'act4_convo';
     bSel.disabled = isSpecial; 
-    mSel.disabled = isSpecial || !isAct4Convo; 
-    eSel.disabled = isSpecial || !isAct4Convo;
+    mSel.disabled = isSpecial || (!isAct4Convo && currentAct !== 'act1' && currentAct !== 'act2'); 
+    eSel.disabled = isSpecial || (!isAct4Convo && currentAct !== 'act1' && currentAct !== 'act2' && currentAct !== 'act3');
     cBtn.style.display = isAct4Convo ? 'block' : 'none';
     const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
@@ -153,8 +147,18 @@ function updateUI() {
     dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
 }
 
+// FIXED RANDOMIZER: Now accounts for Act 4 specific layers
+rBtn.onclick = () => {
+    stopLoop();
+    sSel.value = 'none';
+    const sels = [bSel, mSel, eSel];
+    sels.forEach(s => { if(s.options.length > 0) s.selectedIndex = Math.floor(Math.random() * s.options.length); });
+    if(currentAct === 'act4_convo') coneOn = Math.random() > 0.5;
+    updateUI(); saveState();
+};
+
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
-[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
+[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { stopLoop(); updateUI(); saveState(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
 fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
 cBtn.onclick = () => { coneOn = !coneOn; updateUI(); saveState(); };
