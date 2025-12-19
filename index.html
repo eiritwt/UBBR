@@ -139,11 +139,6 @@ fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
 cBtn.onclick = () => { coneOn = !coneOn; updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
 document.getElementById('resetBtn').onclick = () => { localStorage.clear(); location.reload(); };
-rBtn.onclick = () => {
-    stopLoop(); if (Math.random() < 0.2) { sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1; }
-    else { sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length); mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length); eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length); }
-    updateUI(); saveState();
-};
 
 function drawLayer(name) {
     const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
@@ -159,9 +154,19 @@ function mainLoop(time) {
     if (isFlipped) ctx.scale(-1, 1);
     
     let frameToDraw = sSel.value;
+    let currentAnimIndex = animIndex;
+
     if (isLooping) {
         const loop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
-        if (loop) { animTimer += delta; if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } frameToDraw = loop.sequence[animIndex]; }
+        if (loop) { 
+            animTimer += delta; 
+            if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } 
+            frameToDraw = loop.sequence[animIndex];
+            currentAnimIndex = animIndex;
+        }
+    } else if (frameToDraw.includes("yap")) {
+        const match = frameToDraw.match(/yap_(\d)/);
+        if(match) currentAnimIndex = parseInt(match[1]) - 1;
     }
     
     let squash = (vibrateOn) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
@@ -170,15 +175,13 @@ function mainLoop(time) {
     const layers = acts[currentAct].layers || ["body", "mouth", "eyes"];
     layers.forEach(l => {
         let activeFrame = frameToDraw !== 'none' ? frameToDraw : null;
-        
         if (l === "coneb" || l === "cone") {
             if (!coneOn) return;
             let coneType = "normal";
-            let pose = activeFrame || bSel.value || mSel.value;
-            if (pose.includes("yap")) coneType = "yap_" + (animIndex + 1);
+            let pose = activeFrame || bSel.value || "";
+            if (pose.includes("yap")) coneType = "yap_" + (currentAnimIndex + 1);
             else if (pose.includes("karate")) coneType = "karate";
             else if (pose.includes("scream")) coneType = "scream";
-            
             let suffix = (l === "coneb" && (coneType.startsWith("yap") || coneType === "normal")) ? "blank" : coneType;
             drawLayer(l + "_" + suffix);
         } 
