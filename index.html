@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Renderer - Cry Logic Fixed</title>
+    <title>Beebee Renderer - Final Fixed</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -18,11 +18,13 @@
         select:disabled { opacity: 0.5; cursor: not-allowed; background: #222; }
         .active { background: #e74c3c !important; font-weight: bold; }
         .vibrate-btn.on { background: #9b59b6 !important; }
-        .flip-btn.active { background: #3498db !important; }
-        .cone-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; }
+        .flip-btn.on { background: #3498db !important; }
         .cone-btn.on { background: #3498db !important; border-color: #5dade2; }
         .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
+        .unlock-btn { background: #444; color: #aaa; font-size: 11px; margin-top: 10px; border-style: dashed; }
+        .unlock-btn.enabled { background: #c0392b !important; color: white; border-style: solid; box-shadow: 0 0 10px rgba(192, 57, 43, 0.5); }
+        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 10px; margin-top: 5px; padding: 5px; }
         #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
@@ -30,7 +32,7 @@
 </head>
 <body>
 
-    <h2>Untitled Beebee Renderer</h2>
+    <h2>Beebee Renderer</h2>
 
     <div class="app-layout">
         <div class="canvas-container">
@@ -77,6 +79,8 @@
             
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
             <button id="mainDownloadBtn" class="download-btn">Download Image</button>
+            <button id="unlockBtn" class="unlock-btn">Enable Unrestricted Mode</button>
+            <button id="resetBtn" class="reset-btn">Reset All to Defaults</button>
         </div>
     </div>
 
@@ -109,11 +113,29 @@ const acts = {
 };
 
 const canvas = document.getElementById('beebeeCanvas'), ctx = canvas.getContext('2d');
-let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false, coneOn = false;
+let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false, coneOn = false, unrestricted = false;
 const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
-const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), cBtn = document.getElementById('coneToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-function populateSelects() {
+const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), cBtn = document.getElementById('coneToggle'), dBtn = document.getElementById('mainDownloadBtn'), uBtn = document.getElementById('unlockBtn'), reBtn = document.getElementById('resetBtn'), statusTxt = document.getElementById('status');
+
+function saveState() {
+    const state = { act: currentAct, body: bSel.value, mouth: mSel.value, eyes: eSel.value, spec: sSel.value, vibe: vibrateOn, flip: isFlipped, cone: coneOn, unres: unrestricted };
+    localStorage.setItem('bb_renderer_state', JSON.stringify(state));
+}
+
+function loadState() {
+    const saved = localStorage.getItem('bb_renderer_state');
+    if (!saved) return false;
+    const s = JSON.parse(saved);
+    currentAct = s.act; aSel.value = s.act;
+    populateSelects(false); 
+    bSel.value = s.body; mSel.value = s.mouth; eSel.value = s.eyes; sSel.value = s.spec;
+    vibrateOn = s.vibe; isFlipped = s.flip; coneOn = s.cone; unrestricted = s.unres;
+    updateUI();
+    return true;
+}
+
+function populateSelects(resetDefaults = true) {
     [bSel, mSel, eSel, sSel].forEach(s => s.innerHTML = '');
     const n = document.createElement('option'); n.value = 'none'; n.textContent = '-- Manual Mix --'; sSel.appendChild(n);
     acts[currentAct].frames.forEach(name => {
@@ -124,7 +146,7 @@ function populateSelects() {
         else if (name.startsWith('mouth')) mSel.appendChild(o); 
         else if (name.startsWith('eyes')) eSel.appendChild(o);
     });
-    updateUI();
+    if(resetDefaults) updateUI();
 }
 
 function updateUI() {
@@ -133,50 +155,59 @@ function updateUI() {
     const mouthVal = mSel.value || "";
     const eyesVal = eSel.value || "";
     const isAct2 = currentAct === 'act2';
+    const isAct4 = currentAct === 'act4_convo';
 
-    // Helper to identify "Hard Cry" vs "Cry R"
-    const isHardCry = (v) => v.includes('cry') && !v.includes('cry_r');
+    const isRight = (v) => v.includes('_right') || v.includes('_r') || v.endsWith('_r');
+    const isHardCry = (v) => v.includes('cry') && !isRight(v);
 
-    // RESET DISABLED STATES
-    bSel.disabled = isSpecial;
-    mSel.disabled = isSpecial;
-    eSel.disabled = isSpecial;
+    bSel.disabled = isSpecial; mSel.disabled = isSpecial; eSel.disabled = isSpecial;
+    [bSel, mSel, eSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = false));
 
-    if (isAct2 && !isSpecial) {
-        // JUDGE LOCK
-        if (bodyVal.includes('judge')) {
-            eSel.value = 'eyes_judge';
-            eSel.disabled = true;
-        } 
-        // HARD CRY LOCK: Only triggers if it's the specific "Cry" set, not "Cry R"
-        else if (isHardCry(bodyVal) || isHardCry(mouthVal) || isHardCry(eyesVal)) {
+    if (!isSpecial && !unrestricted) {
+        if (isAct2 && bodyVal.includes('judge')) { eSel.value = 'eyes_judge'; eSel.disabled = true; } 
+        else if (isAct2 && (isHardCry(bodyVal) || isHardCry(mouthVal) || isHardCry(eyesVal))) {
             if(!isHardCry(bodyVal)) bSel.value = 'body_cry_6';
             if(!isHardCry(eSel.value)) eSel.value = 'eyes_cry';
             if(!isHardCry(mSel.value)) mSel.value = 'mouth_cry';
-
-            // Filter dropdowns to only show compatible Hard Cry parts
-            Array.from(eSel.options).forEach(o => o.disabled = !isHardCry(o.value));
-            Array.from(mSel.options).forEach(o => o.disabled = !isHardCry(o.value));
-            Array.from(bSel.options).forEach(o => o.disabled = !isHardCry(o.value));
+            [eSel, mSel, bSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = !isHardCry(o.value)));
         } 
+        else if (isRight(mouthVal)) {
+            if (!isRight(eyesVal)) eSel.value = 'eyes_normal_r';
+            Array.from(eSel.options).forEach(o => o.disabled = !isRight(o.value));
+        }
         else {
-            // Re-enable everything else (including Cry R)
             Array.from(eSel.options).forEach(o => o.disabled = o.value === 'eyes_judge' || isHardCry(o.value));
             Array.from(mSel.options).forEach(o => o.disabled = isHardCry(o.value));
             Array.from(bSel.options).forEach(o => o.disabled = isHardCry(o.value));
         }
     }
 
-    cBtn.style.display = currentAct === 'act4_convo' ? 'block' : 'none';
-    const currentSpecialLoop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
-    const hasAnimation = currentSpecialLoop || isLooping;
-    lBtn.style.display = hasAnimation ? 'block' : 'none';
+    cBtn.style.display = isAct4 ? 'block' : 'none';
+    const loopData = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
+    lBtn.style.display = (loopData || isLooping) ? 'block' : 'none';
     
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
-    fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn active" : "flip-btn";
-    cBtn.textContent = coneOn ? "Cone: ON" : "Cone: OFF"; cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
-    dBtn.textContent = (vibrateOn || hasAnimation) ? "Download GIF" : "Download PNG";
+    fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn on" : "flip-btn";
+    cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
+    uBtn.textContent = unrestricted ? "Unrestricted: ON" : "Enable Unrestricted Mode";
+    uBtn.className = unrestricted ? "unlock-btn enabled" : "unlock-btn";
+    dBtn.textContent = (vibrateOn || loopData || isLooping) ? "Download GIF" : "Download PNG";
+    saveState();
 }
+
+uBtn.onclick = () => {
+    if (!unrestricted) {
+        if (window.confirm("WARNING: Unrestricted Mode disables all orientation and set locks. Assets may overlap or look broken. Proceed?")) unrestricted = true;
+    } else { unrestricted = false; }
+    updateUI();
+};
+
+reBtn.onclick = () => {
+    if (window.confirm("Reset all settings and clear saved data?")) {
+        localStorage.removeItem('bb_renderer_state');
+        location.reload();
+    }
+};
 
 rBtn.onclick = () => {
     stopLoop(); sSel.value = 'none';
@@ -190,8 +221,8 @@ rBtn.onclick = () => {
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
 [sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { stopLoop(); updateUI(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); };
-fBtn.onclick = () => isFlipped = !isFlipped;
-cBtn.onclick = () => coneOn = !coneOn;
+fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); };
+cBtn.onclick = () => { coneOn = !coneOn; updateUI(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
 
 function drawLayer(name) {
@@ -237,7 +268,6 @@ function mainLoop(time) {
         else if (l === "mouth") drawLayer(activeFrame ? "mouth_blank" : mSel.value);
         else if (l === "eyes") drawLayer(activeFrame ? "eyes_blank" : eSel.value);
     });
-
     ctx.restore(); requestAnimationFrame(mainLoop);
 }
 
@@ -264,7 +294,7 @@ async function captureGif() {
     } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
 }
 
-populateSelects();
+if(!loadState()) populateSelects();
 images['act1'].onload = () => requestAnimationFrame(mainLoop);
 </script>
 </body>
