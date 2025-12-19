@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Renderer - Logic Finalized</title>
+    <title>Beebee Renderer - Animation Fixed</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -77,7 +77,7 @@
 
             <hr>
             
-            <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
+            <button id="loopBtn" class="full-width">Start Loop</button>
             <button id="mainDownloadBtn" class="download-btn">Download Image</button>
             <button id="unlockBtn" class="unlock-btn">Enable Unrestricted Mode</button>
             <button id="resetBtn" class="reset-btn">Reset All to Defaults</button>
@@ -87,7 +87,7 @@
 <script>
 const acts = {
     act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, frame: { w: 720, h: 500 }, frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }] },
-    act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frame: { w: 720, h: 500 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }] },
+    act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frame: { w: 720, h: 500 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }, { trigger: "scream_a*", sequence: ["body_scream_a_1*", "body_scream_a_2*"], wait: 0.1 }, { trigger: "scream_b*", sequence: ["body_scream_b_1*", "body_scream_b_2*"], wait: 0.1 }, { trigger: "scream_c*", sequence: ["body_scream_c_1*", "body_scream_c_2*"], wait: 0.1 }, { trigger: "cry*", sequence: ["body_cry_1*", "body_cry_2*", "body_cry_3*", "body_cry_5*"], wait: 0.15 }] },
     act3: { src: 'fight_bb.png', grid: { width: 8 }, anchor: { x: 270, y: 223 }, frame: { w: 720, h: 500 }, frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: [] },
     act4_convo: { 
         src: 'bb_convo.png', 
@@ -119,7 +119,7 @@ const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); ima
 const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), cBtn = document.getElementById('coneToggle'), dBtn = document.getElementById('mainDownloadBtn'), uBtn = document.getElementById('unlockBtn'), reBtn = document.getElementById('resetBtn'), statusTxt = document.getElementById('status');
 
 function saveState() {
-    const state = { act: currentAct, body: bSel.value, mouth: mSel.value, eyes: eSel.value, spec: sSel.value, vibe: vibrateOn, flip: isFlipped, cone: coneOn, unres: unrestricted };
+    const state = { act: currentAct, body: bSel.value, mouth: mSel.value, eyes: eSel.value, spec: sSel.value, vibe: vibrateOn, flip: isFlipped, cone: coneOn, unres: unrestricted, looping: isLooping };
     localStorage.setItem('bb_renderer_state', JSON.stringify(state));
 }
 
@@ -130,7 +130,7 @@ function loadState() {
     currentAct = s.act; aSel.value = s.act;
     populateSelects(false); 
     bSel.value = s.body; mSel.value = s.mouth; eSel.value = s.eyes; sSel.value = s.spec;
-    vibrateOn = s.vibe; isFlipped = s.flip; coneOn = s.cone; unrestricted = s.unres;
+    vibrateOn = s.vibe; isFlipped = s.flip; coneOn = s.cone; unrestricted = s.unres; isLooping = s.looping;
     updateUI();
     return true;
 }
@@ -165,33 +165,25 @@ function updateUI() {
     [bSel, mSel, eSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = false));
 
     if (!isSpecial && !unrestricted) {
-        // 1. JUDGE LOCK PRIORITY (Blocks Cry AND Right-oriented assets)
         if (isAct2 && (isJudge(bodyVal) || isJudge(eyesVal))) { 
             if (!isJudge(bodyVal)) bSel.value = 'body_judge_1';
             if (!isJudge(eyesVal)) eSel.value = 'eyes_judge';
-            
-            // If user has a restricted mouth (Cry or Right), reset to normal
             if (isHardCry(mouthVal) || isRight(mouthVal)) mSel.value = 'mouth_normal';
-
             eSel.disabled = true;
-            // Filter both Cry and Right assets from being selectable
             Array.from(mSel.options).forEach(o => { if(isHardCry(o.value) || isRight(o.value)) o.disabled = true; });
             Array.from(bSel.options).forEach(o => { if(isHardCry(o.value)) o.disabled = true; });
         } 
-        // 2. HARD CRY LOCK
         else if (isAct2 && (isHardCry(bodyVal) || isHardCry(mouthVal) || isHardCry(eyesVal))) {
             if(!isHardCry(bodyVal)) bSel.value = 'body_cry_6';
             if(!isHardCry(eSel.value)) eSel.value = 'eyes_cry';
             if(!isHardCry(mSel.value)) mSel.value = 'mouth_cry';
             [eSel, mSel, bSel].forEach(s => Array.from(s.options).forEach(o => o.disabled = !isHardCry(o.value)));
         } 
-        // 3. RIGHT ORIENTATION LOCK
         else if (isRight(mouthVal)) {
             if (!isRight(eyesVal)) eSel.value = 'eyes_normal_r';
             Array.from(eSel.options).forEach(o => o.disabled = !isRight(o.value));
         }
         else {
-            // General preventative
             Array.from(eSel.options).forEach(o => o.disabled = (isJudge(o.value) || isHardCry(o.value)));
             Array.from(mSel.options).forEach(o => o.disabled = (isHardCry(o.value) || (isAct2 && isRight(o.value))));
             Array.from(bSel.options).forEach(o => o.disabled = isHardCry(o.value));
@@ -199,15 +191,19 @@ function updateUI() {
     }
 
     cBtn.style.display = isAct4 ? 'block' : 'none';
+    
+    // LOOP BUTTON LOGIC: Always show if vibrate is on OR pose is special
     const loopData = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
-    lBtn.style.display = (loopData || isLooping) ? 'block' : 'none';
+    lBtn.style.display = (loopData || vibrateOn) ? 'block' : 'none';
+    lBtn.textContent = isLooping ? "Stop Loop" : "Start Loop";
+    lBtn.className = isLooping ? "full-width active" : "full-width";
     
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
     fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn on" : "flip-btn";
     cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
     uBtn.textContent = unrestricted ? "Unrestricted: ON" : "Enable Unrestricted Mode";
     uBtn.className = unrestricted ? "unlock-btn enabled" : "unlock-btn";
-    dBtn.textContent = (vibrateOn || loopData || isLooping) ? "Download GIF" : "Download PNG";
+    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
     saveState();
 }
 
@@ -240,7 +236,7 @@ aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); 
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); };
 fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); };
 cBtn.onclick = () => { coneOn = !coneOn; updateUI(); };
-lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
+lBtn.onclick = () => { isLooping = !isLooping; updateUI(); };
 
 function drawLayer(name) {
     const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
@@ -258,14 +254,18 @@ function mainLoop(time) {
     let frameToDraw = sSel.value;
     let currentAnimIndex = animIndex;
     const loop = acts[currentAct].loops.find(l => sSel.value.includes(l.trigger.replace('*','')));
-    if (loop && (isLooping || sSel.value !== 'none')) { 
+    
+    // Animation only happens if isLooping is TRUE
+    if (loop && isLooping) { 
         animTimer += delta; 
         if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } 
         frameToDraw = loop.sequence[animIndex];
         currentAnimIndex = animIndex;
+    } else {
+        animIndex = 0; // Reset to first frame if not looping
     }
     
-    let squash = (vibrateOn) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
+    let squash = (vibrateOn && isLooping) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
     ctx.scale(1, squash);
 
     const layers = acts[currentAct].layers || ["body", "mouth", "eyes"];
@@ -288,7 +288,8 @@ function mainLoop(time) {
     ctx.restore(); requestAnimationFrame(mainLoop);
 }
 
-function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
+function stopLoop() { isLooping = false; animTimer = 0; animIndex = 0; updateUI(); }
+
 dBtn.onclick = () => {
     if (dBtn.textContent === "Download PNG") {
         const link = document.createElement('a'); link.download = `beebee.png`; link.href = canvas.toDataURL("image/png"); link.click();
@@ -301,7 +302,18 @@ async function captureGif() {
         const resp = await fetch('https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js');
         const workerUrl = URL.createObjectURL(new Blob([await resp.text()], { type: 'application/javascript' }));
         const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: workerUrl });
-        for (let i = 0; i < 25; i++) { gif.addFrame(ctx, {copy: true, delay: 50}); await new Promise(r => setTimeout(r, 50)); }
+        
+        // Ensure we are looping for the capture
+        const originalLoopState = isLooping;
+        isLooping = true;
+
+        for (let i = 0; i < 30; i++) { 
+            gif.addFrame(ctx, {copy: true, delay: 50}); 
+            await new Promise(r => setTimeout(r, 50)); 
+        }
+        
+        isLooping = originalLoopState; // Restore state
+
         gif.on('finished', (blob) => {
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee.gif`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
