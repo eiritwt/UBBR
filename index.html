@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beebee Renderer - Logic Locked</title>
+    <title>Beebee Renderer - Cry Logic Fixed</title>
     <script src="https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.js"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
@@ -131,7 +131,11 @@ function updateUI() {
     const isSpecial = sSel.value !== 'none';
     const bodyVal = bSel.value || "";
     const mouthVal = mSel.value || "";
+    const eyesVal = eSel.value || "";
     const isAct2 = currentAct === 'act2';
+
+    // Helper to identify "Hard Cry" vs "Cry R"
+    const isHardCry = (v) => v.includes('cry') && !v.includes('cry_r');
 
     // RESET DISABLED STATES
     bSel.disabled = isSpecial;
@@ -144,18 +148,22 @@ function updateUI() {
             eSel.value = 'eyes_judge';
             eSel.disabled = true;
         } 
-        // CRY LOCK: If body is cry, lock eyes/mouth to cry set
-        else if (bodyVal.includes('cry')) {
-            if(!eSel.value.includes('cry')) eSel.value = 'eyes_cry';
-            if(!mSel.value.includes('cry')) mSel.value = 'mouth_cry';
-            // Disable changing to non-cry face while body is crying
-            Array.from(eSel.options).forEach(o => o.disabled = !o.value.includes('cry'));
-            Array.from(mSel.options).forEach(o => o.disabled = !o.value.includes('cry'));
+        // HARD CRY LOCK: Only triggers if it's the specific "Cry" set, not "Cry R"
+        else if (isHardCry(bodyVal) || isHardCry(mouthVal) || isHardCry(eyesVal)) {
+            if(!isHardCry(bodyVal)) bSel.value = 'body_cry_6';
+            if(!isHardCry(eSel.value)) eSel.value = 'eyes_cry';
+            if(!isHardCry(mSel.value)) mSel.value = 'mouth_cry';
+
+            // Filter dropdowns to only show compatible Hard Cry parts
+            Array.from(eSel.options).forEach(o => o.disabled = !isHardCry(o.value));
+            Array.from(mSel.options).forEach(o => o.disabled = !isHardCry(o.value));
+            Array.from(bSel.options).forEach(o => o.disabled = !isHardCry(o.value));
         } 
         else {
-            // Re-enable options if not in cry mode
-            Array.from(eSel.options).forEach(o => o.disabled = o.value === 'eyes_judge' || o.value.includes('cry'));
-            Array.from(mSel.options).forEach(o => o.disabled = o.value.includes('cry'));
+            // Re-enable everything else (including Cry R)
+            Array.from(eSel.options).forEach(o => o.disabled = o.value === 'eyes_judge' || isHardCry(o.value));
+            Array.from(mSel.options).forEach(o => o.disabled = isHardCry(o.value));
+            Array.from(bSel.options).forEach(o => o.disabled = isHardCry(o.value));
         }
     }
 
