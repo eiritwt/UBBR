@@ -22,24 +22,16 @@
 
         select, button { padding: 12px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 8px; font-size: 14px; outline: none; -webkit-appearance: none; cursor: pointer; }
         select:disabled { opacity: 0.4; background: #111; }
-        
         .active { background: #e74c3c !important; font-weight: bold; }
-        .vibrate-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; }
-        .vibrate-btn.on { background: #9b59b6 !important; border-color: #af7ac5; }
-        
-        .flip-btn { background: #34495e; border: none; font-weight: bold; }
+        .vibrate-btn.on { background: #9b59b6 !important; }
         .flip-btn.active { background: #3498db !important; }
-        
-        .random-btn { background: #f39c12; border: none; font-weight: bold; color: #1a1a1a; }
+        .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
-        .download-btn.gif-mode { background: #9b59b6; }
+        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; }
         
-        .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; border-radius: 4px; }
-        
-        #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 10px; }
+        #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
-
         .credits { margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; text-align: center; font-size: 11px; color: #666; }
         .credits a { color: #888; text-decoration: none; font-weight: bold; }
     </style>
@@ -60,6 +52,8 @@
                 <option value="act1">Act 1: The Encounter</option>
                 <option value="act2">Act 2: The Battle</option>
                 <option value="act3">Act 3: The Fight</option>
+                <option value="act4_convo">Act 4: Conversation</option>
+                <option value="act4_closer">Act 4: Closer</option>
             </select>
 
             <div class="grid-controls">
@@ -87,6 +81,16 @@
             <label>Mouth</label>
             <select id="mouthSelect"></select>
 
+            <div id="coneControls" style="display:none;">
+                <label>Medical Cone</label>
+                <select id="coneSelect">
+                    <option value="none">No Cone</option>
+                    <option value="normal">Normal Cone</option>
+                    <option value="scream">Scream Cone</option>
+                    <option value="karate">Karate Cone</option>
+                </select>
+            </div>
+
             <hr>
             
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
@@ -102,22 +106,24 @@
 
 <script>
 const acts = {
-    act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }, { trigger: "flail*", sequence: ["body_flail*", "body_flail2*", "body_flail3*", "body_flail4*"], wait: 0.05 }] },
-    act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "scream_c*", sequence: ["body_scream_c_1*", "body_scream_c_2*"], wait: 0.07 }, { trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }, { trigger: "special_b*", sequence: ["body_special_b_1*", "body_special_b_2*", "body_special_b_3*"], wait: 0.1 }] },
-    act3: { src: 'fight_bb.png', grid: { width: 8 }, anchor: { x: 270, y: 223 }, frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: [] }
+    act1: { src: 'act1_beebee.png', grid: { width: 4 }, anchor: { x: 273, y: 200 }, size: [720, 500], frames: ["body_normal","body_fear","body_point_crotch","body_point_heart","body_sing","mouth_normal","mouth_normal_talk","mouth_small","mouth_small_talk","mouth_small_lock","eyes_normal","eyes_normal_right","eyes_uncertain","eyes_uncertain_right","eyes_narrow","eyes_narrow_eyebrow","eyes_fear","eyes_pretty","eyes_wat","eyes_wat_2","body_panic*","body_panic_2*","body_scream_anger*","body_scream_anger_2*","body_scream*","body_scream_2*","body_flail*","body_flail2*","body_flail3*","body_flail4*","mouth_smile","mouth_smile_talk","mouth_smile_lock","eyes_smile","eyes_look","eyes_look_sad","eyes_look_sad_smile","eyes_pained1","eyes_pained2","mouth_shut","eyes_anger","body_meta*","body_laugh*","body_pride_talk*","body_pride*","body_squeeze_talk*","body_squeeze*"], loops: [{ trigger: "panic*", sequence: ["body_panic*", "body_panic_2*"], wait: 0.07 }, { trigger: "scream*", sequence: ["body_scream*", "body_scream_2*"], wait: 0.1 }, { trigger: "flail*", sequence: ["body_flail*", "body_flail2*", "body_flail3*", "body_flail4*"], wait: 0.05 }] },
+    act2: { src: 'battle_bb.png', grid: { width: 10 }, anchor: { x: 292.5, y: 249.4 }, size: [720, 500], frames: ["body_normal","body_two_up","body_chest","body_point","body_one_up","body_scream_a_1*","body_scream_a_2*","body_shocked*","mouth_small","mouth_small_talk","mouth_normal","mouth_normal_talk","mouth_smile","mouth_smile_talk","eyes_normal","eyes_normal_r","eyes_suspect","eyes_suspect_r","eyes_sad","eyes_sad_r","eyes_shock","eyes_happy","eyes_happy_r","eyes_closed","eyes_judge","body_judge_1","body_judge_2","body_scream_b_1*","body_scream_b_2*","body_scream_c_1*","body_scream_c_2*","body_cry_1*","body_cry_2*","body_cry_3*","body_cry_4","mouth_cry_talk","mouth_cry","eyes_cry","eyes_cry_2","body_cry_5*","body_cry_6","mouth_right","mouth_right_talk","eyes_cry_r_1","eyes_cry_r_2","eyes_cry_r_3","eyes_cry_r_4","mouth_blank","eyes_blank","eyes_asdf","eyes_angry","eyes_sad_2","eyes_wat","body_attacked*","body_frazzled","mouth_frazzled_talk","mouth_frazzled","eyes_frazzled","body_panicked","mouth_panicked","mouth_panicked_talk","eyes_panicked","body_special_a*","body_special_b_1*","body_special_b_2*","body_special_b_3*","body_special_c*","body_final_1*","body_final_2*","body_final_3*","body_final_4*","body_yell_1*","body_yell_2*","body_yell_angry_1*","body_yell_angry_2*"], loops: [{ trigger: "scream_c*", sequence: ["body_scream_c_1*", "body_scream_c_2*"], wait: 0.07 }, { trigger: "final*", sequence: ["body_final_1*", "body_final_2*", "body_final_3*", "body_final_4*"], wait: 0.05 }, { trigger: "special_b*", sequence: ["body_special_b_1*", "body_special_b_2*", "body_special_b_3*"], wait: 0.1 }] },
+    act3: { src: 'fight_bb.png', grid: { width: 8 }, anchor: { x: 270, y: 223 }, size: [720, 500], frames: ["body_normal_1","body_normal_2","body_normal_3","body_normal_4","mouth_sorry","mouth_sorry_talk","eyes_sorry_down","eyes_sorry","eyes_sorry_up","mouth_normal","mouth_normal_talk","eyes_oh_crap","eyes_start","eyes_normal","eyes_angry","eyes_sad","mouth_ignore","mouth_ignore_talk","eyes_ignore","eyes_ignore_oh_crap","body_attacked*","body_dead*","body_special_attack*"], loops: [] },
+    act4_convo: { src: 'bb_convo.png', grid: { width: 8 }, anchor: { x: 171, y: 242 }, size: [500, 500], layers: ["coneb", "body", "mouth", "eyes", "cone"], frames: ["body_normal","body_chest","body_two_up","body_one_up","body_paw","cone_normal","coneb_normal","mouth_normal","mouth_normal_talk","mouth_narrow","mouth_narrow_talk","mouth_smile","mouth_smile_talk","mouth_scream","mouth_scream_talk","cone_scream","coneb_scream","eyes_normal","eyes_normal_r","eyes_normal_u","eyes_normal_d","eyes_look_down","eyes_scream","eyes_scream_sad","eyes_super_sad","eyes_closed","eyes_closed_annoyed","eyes_sexy","eyes_smile","eyes_smile_r","eyes_smile_u","eyes_smile_d","eyes_angry","eyes_angry_r","eyes_angry_u","eyes_angry_d","eyes_surprise","eyes_surprise_r","eyes_surprise_u","eyes_surprise_d","eyes_annoyed","eyes_annoyed_r","eyes_annoyed_u","eyes_annoyed_d","eyes_sad","eyes_sad_r","eyes_sad_u","eyes_sad_d","eyes_suspect","eyes_suspect_r","body_karate_1*","body_karate_2*","cone_karate","coneb_karate","body_yap_1*","body_yap_2*","body_yap_3*","body_yap_4*","cone_yap_1","cone_yap_2","cone_yap_3","cone_yap_4","eyes_blank","mouth_blank","coneb_blank"], loops: [{ trigger: "yap*", sequence: ["body_yap_1*", "body_yap_2*", "body_yap_3*", "body_yap_4*"], wait: 0.04 }] },
+    act4_closer: { src: 'bb_closer.png', grid: { width: 8 }, anchor: { x: 171, y: 242 }, size: [500, 500], layers: ["coneb", "body", "mouth", "eyes", "cone"], frames: ["body_normal","body_normal_2","body_normal_3","body_normal_4","body_normal_5","body_normal_6","body_normal_7","body_normal_8","body_normal_9","body_normal_10","body_normal_11","body_normal_12","body_normal_13","body_normal_14","body_normal_15","body_normal_16","body_normal_17","mouth_blank","body_normal_18","body_normal_19","body_normal_20","body_normal_21","eyes_blank","eyes_blank_2","eyes_blank_3","eyes_blank_4","eyes_blank_5","eyes_blank_6","eyes_blank_7","body_normal_22"], loops: [] }
 };
 
 const canvas = document.getElementById('beebeeCanvas'), ctx = canvas.getContext('2d');
 let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false;
 
 const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
-const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
+const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), cSel = document.getElementById('coneSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn, flip: isFlipped })); }
+function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, cone: cSel.value, vibe: vibrateOn, flip: isFlipped })); }
 function loadState() {
     const saved = localStorage.getItem('beebee_state'); if (!saved) return false;
     const s = JSON.parse(saved); currentAct = s.act; aSel.value = s.act; populateSelects(false);
-    sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; 
+    sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; cSel.value = s.cone || 'none';
     vibrateOn = s.vibe; isFlipped = s.flip || false;
     updateUI(); return true;
 }
@@ -129,24 +135,22 @@ function populateSelects(shouldSave = true) {
         const o = document.createElement('option'); o.value = name; o.textContent = name;
         if (name.includes('*')) sSel.appendChild(o); else if (name.startsWith('body')) bSel.appendChild(o); else if (name.startsWith('mouth')) mSel.appendChild(o); else if (name.startsWith('eyes')) eSel.appendChild(o);
     });
+    document.getElementById('coneControls').style.display = currentAct.startsWith('act4') ? 'block' : 'none';
     updateUI(); if(shouldSave) saveState();
 }
 
 function updateUI() {
     const isSpecial = sSel.value !== 'none';
-    const isJudge = bSel.value.includes('judge') && !isSpecial;
-    if (isJudge) { eSel.value = 'eyes_judge'; eSel.disabled = true; document.getElementById('eyesLabel').textContent = 'Eyes (Locked)'; }
-    else { eSel.disabled = isSpecial; document.getElementById('eyesLabel').textContent = 'Eyes'; }
-    bSel.disabled = isSpecial; mSel.disabled = isSpecial;
+    bSel.disabled = isSpecial; mSel.disabled = isSpecial; eSel.disabled = isSpecial;
     const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
     fBtn.textContent = isFlipped ? "Flip Horizontal: ON" : "Flip Horizontal: OFF"; fBtn.className = isFlipped ? "flip-btn full-width active" : "flip-btn full-width";
-    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG"; dBtn.className = (vibrateOn || isLooping) ? "download-btn gif-mode" : "download-btn";
+    dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
 }
 
 aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); };
-[sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
+[sSel, bSel, mSel, eSel, cSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
 fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
@@ -154,52 +158,21 @@ document.getElementById('resetBtn').onclick = () => { localStorage.clear(); loca
 
 rBtn.onclick = () => {
     stopLoop(); if (Math.random() < 0.2) { sSel.selectedIndex = Math.floor(Math.random() * (sSel.options.length - 1)) + 1; }
-    else { sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length);
-        if (bSel.value.includes('judge')) eSel.value = 'eyes_judge'; else eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length);
-        mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length); }
+    else { sSel.value = 'none'; bSel.selectedIndex = Math.floor(Math.random() * bSel.options.length); mSel.selectedIndex = Math.floor(Math.random() * mSel.options.length); eSel.selectedIndex = Math.floor(Math.random() * eSel.options.length); }
     updateUI(); saveState();
 };
-
-dBtn.onclick = () => {
-    if (dBtn.textContent === "Download PNG") {
-        const link = document.createElement('a'); link.download = `beebee_${Date.now()}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-    } else { captureGif(); }
-};
-
-async function captureGif() {
-    statusTxt.style.display = 'block'; dBtn.disabled = true;
-    try {
-        const response = await fetch('https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js');
-        const workerBlob = new Blob([await response.text()], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(workerBlob);
-        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: workerUrl });
-        for (let i = 0; i < 25; i++) { gif.addFrame(ctx, {copy: true, delay: 50}); await new Promise(r => setTimeout(r, 50)); }
-        gif.on('finished', (blob) => {
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee_anim.gif`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            statusTxt.style.display = 'none'; dBtn.disabled = false; URL.revokeObjectURL(workerUrl);
-        });
-        gif.render();
-    } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
-}
-
-function stopLoop() { isLooping = false; lBtn.classList.remove('active'); animTimer = 0; animIndex = 0; }
 
 function drawLayer(name) {
     const act = acts[currentAct]; const idx = act.frames.indexOf(name); if (idx === -1) return;
     const col = idx % act.grid.width, row = Math.floor(idx / act.grid.width);
-    ctx.drawImage(images[currentAct], col*720, row*500, 720, 500, -act.anchor.x, -act.anchor.y, 720, 500);
+    const sw = act.size[0], sh = act.size[1];
+    ctx.drawImage(images[currentAct], col*sw, row*sh, sw, sh, -act.anchor.x, -act.anchor.y, sw, sh);
 }
 
 function mainLoop(time) {
     const delta = (time - lastTime) / 1000; lastTime = time; ticker += delta;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    
-    // TRANSFORMATION START
+    ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    
-    // FLIP LOGIC
     if (isFlipped) ctx.scale(-1, 1);
     
     let frameToDraw = sSel.value;
@@ -208,14 +181,44 @@ function mainLoop(time) {
         if (loop) { animTimer += delta; if (animTimer >= loop.wait) { animIndex = (animIndex + 1) % loop.sequence.length; animTimer = 0; } frameToDraw = loop.sequence[animIndex]; }
     }
     
-    let squash = (vibrateOn && !frameToDraw.includes("squeeze") && !frameToDraw.includes("special_c")) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
+    let squash = (vibrateOn) ? 1 + Math.sin(ticker * Math.PI * 2 * 7) * 0.01 : 1;
     ctx.scale(1, squash);
-    
-    if (frameToDraw !== 'none') drawLayer(frameToDraw); 
-    else { drawLayer(bSel.value); drawLayer(mSel.value); drawLayer(eSel.value); }
-    
-    ctx.restore();
-    requestAnimationFrame(mainLoop);
+
+    if (frameToDraw !== 'none') {
+        drawLayer(frameToDraw);
+    } else {
+        const order = acts[currentAct].layers || ["body", "mouth", "eyes"];
+        order.forEach(layerType => {
+            if (layerType === "coneb" && cSel.value !== 'none') drawLayer("coneb_" + cSel.value);
+            else if (layerType === "body") drawLayer(bSel.value);
+            else if (layerType === "mouth") drawLayer(mSel.value);
+            else if (layerType === "eyes") drawLayer(eSel.value);
+            else if (layerType === "cone" && cSel.value !== 'none') drawLayer("cone_" + cSel.value);
+        });
+    }
+    ctx.restore(); requestAnimationFrame(mainLoop);
+}
+
+dBtn.onclick = () => {
+    if (dBtn.textContent === "Download PNG") {
+        const link = document.createElement('a'); link.download = `beebee.png`; link.href = canvas.toDataURL("image/png"); link.click();
+    } else { captureGif(); }
+};
+
+async function captureGif() {
+    statusTxt.style.display = 'block'; dBtn.disabled = true;
+    try {
+        const resp = await fetch('https://cdn.jsdelivr.net/gh/jnordberg/gif.js/dist/gif.worker.js');
+        const workerUrl = URL.createObjectURL(new Blob([await resp.text()], { type: 'application/javascript' }));
+        const gif = new GIF({ workers: 2, quality: 10, width: 720, height: 500, workerScript: workerUrl });
+        for (let i = 0; i < 25; i++) { gif.addFrame(ctx, {copy: true, delay: 50}); await new Promise(r => setTimeout(r, 50)); }
+        gif.on('finished', (blob) => {
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `beebee.gif`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            statusTxt.style.display = 'none'; dBtn.disabled = false;
+        });
+        gif.render();
+    } catch(e) { statusTxt.style.display = 'none'; dBtn.disabled = false; }
 }
 
 if (!loadState()) populateSelects();
