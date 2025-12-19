@@ -23,6 +23,8 @@
         .active { background: #e74c3c !important; font-weight: bold; }
         .vibrate-btn.on { background: #9b59b6 !important; }
         .flip-btn.active { background: #3498db !important; }
+        .cone-btn { background: #3d3d3d; border: 1px solid #555; font-weight: bold; }
+        .cone-btn.on { background: #3498db !important; border-color: #5dade2; }
         .random-btn { background: #f39c12; color: #1a1a1a; font-weight: bold; }
         .download-btn { background: #27ae60; border: none; font-weight: bold; }
         .reset-btn { background: transparent; border: 1px solid #444; color: #666; font-size: 11px; margin-top: 10px; padding: 5px; width: 100%; }
@@ -30,7 +32,6 @@
         #status { font-size: 0.9em; color: #f1c40f; text-align: center; display: none; padding: 10px; font-weight: bold; }
         label { font-size: 0.7em; color: #888; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
         hr { border: 0; border-top: 1px solid #444; width: 100%; margin: 10px 0; }
-        .credits { margin-top: 15px; padding-top: 10px; border-top: 1px solid #333; text-align: center; font-size: 11px; color: #666; }
     </style>
 </head>
 <body>
@@ -56,7 +57,8 @@
             <div class="grid-controls">
                 <button id="randomBtn" class="random-btn">Randomize</button>
                 <button id="vibeToggle" class="vibrate-btn">Vibration: OFF</button>
-                <button id="flipToggle" class="flip-btn full-width">Flip Horizontal: OFF</button>
+                <button id="flipToggle" class="flip-btn">Flip: OFF</button>
+                <button id="coneToggle" class="cone-btn">Cone: OFF</button>
             </div>
 
             <hr>
@@ -83,8 +85,6 @@
             <button id="loopBtn" class="full-width" style="display:none;">Start Loop</button>
             <button id="mainDownloadBtn" class="download-btn">Download Image</button>
             <button id="resetBtn" class="reset-btn">Reset All Settings</button>
-
-            <div class="credits">Art by <a href="https://ncase.me/" target="_blank" style="color:#888">Nicky Case</a></div>
         </div>
     </div>
 
@@ -98,16 +98,16 @@ const acts = {
 };
 
 const canvas = document.getElementById('beebeeCanvas'), ctx = canvas.getContext('2d');
-let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false;
+let currentAct = 'act1', ticker = 0, lastTime = 0, animTimer = 0, animIndex = 0, isLooping = false, vibrateOn = false, isFlipped = false, coneOn = false;
 const images = {}; Object.keys(acts).forEach(k => { images[k] = new Image(); images[k].src = acts[k].src; });
-const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
+const bSel = document.getElementById('bodySelect'), mSel = document.getElementById('mouthSelect'), eSel = document.getElementById('eyesSelect'), sSel = document.getElementById('specialSelect'), aSel = document.getElementById('actSelect'), lBtn = document.getElementById('loopBtn'), rBtn = document.getElementById('randomBtn'), vBtn = document.getElementById('vibeToggle'), fBtn = document.getElementById('flipToggle'), cBtn = document.getElementById('coneToggle'), dBtn = document.getElementById('mainDownloadBtn'), statusTxt = document.getElementById('status');
 
-function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn, flip: isFlipped })); }
+function saveState() { localStorage.setItem('beebee_state', JSON.stringify({ act: aSel.value, special: sSel.value, body: bSel.value, eyes: eSel.value, mouth: mSel.value, vibe: vibrateOn, flip: isFlipped, cone: coneOn })); }
 function loadState() {
     const saved = localStorage.getItem('beebee_state'); if (!saved) return false;
     const s = JSON.parse(saved); currentAct = s.act; aSel.value = s.act; populateSelects(false);
     sSel.value = s.special; bSel.value = s.body; eSel.value = s.eyes; mSel.value = s.mouth; 
-    vibrateOn = s.vibe; isFlipped = s.flip || false; updateUI(); return true;
+    vibrateOn = s.vibe; isFlipped = s.flip || false; coneOn = s.cone || false; updateUI(); return true;
 }
 
 function populateSelects(shouldSave = true) {
@@ -123,10 +123,12 @@ function populateSelects(shouldSave = true) {
 function updateUI() {
     const isSpecial = sSel.value !== 'none';
     bSel.disabled = isSpecial; mSel.disabled = isSpecial; eSel.disabled = isSpecial;
+    cBtn.style.display = currentAct === 'act4_convo' ? 'block' : 'none';
     const hasL = acts[currentAct].loops.some(l => sSel.value.includes(l.trigger.replace('*','')));
     lBtn.style.display = (hasL || isLooping) ? 'block' : 'none';
     vBtn.textContent = vibrateOn ? "Vibration: ON" : "Vibration: OFF"; vBtn.className = vibrateOn ? "vibrate-btn on" : "vibrate-btn";
-    fBtn.textContent = isFlipped ? "Flip Horizontal: ON" : "Flip Horizontal: OFF"; fBtn.className = isFlipped ? "flip-btn full-width active" : "flip-btn full-width";
+    fBtn.textContent = isFlipped ? "Flip: ON" : "Flip: OFF"; fBtn.className = isFlipped ? "flip-btn active" : "flip-btn";
+    cBtn.textContent = coneOn ? "Cone: ON" : "Cone: OFF"; cBtn.className = coneOn ? "cone-btn on" : "cone-btn";
     dBtn.textContent = (vibrateOn || isLooping) ? "Download GIF" : "Download PNG";
 }
 
@@ -134,6 +136,7 @@ aSel.onchange = () => { currentAct = aSel.value; stopLoop(); populateSelects(); 
 [sSel, bSel, mSel, eSel].forEach(el => el.onchange = () => { updateUI(); saveState(); });
 vBtn.onclick = () => { vibrateOn = !vibrateOn; updateUI(); saveState(); };
 fBtn.onclick = () => { isFlipped = !isFlipped; updateUI(); saveState(); };
+cBtn.onclick = () => { coneOn = !coneOn; updateUI(); saveState(); };
 lBtn.onclick = () => { isLooping = !isLooping; lBtn.classList.toggle('active', isLooping); updateUI(); };
 document.getElementById('resetBtn').onclick = () => { localStorage.clear(); location.reload(); };
 rBtn.onclick = () => {
@@ -169,13 +172,14 @@ function mainLoop(time) {
         let activeFrame = frameToDraw !== 'none' ? frameToDraw : null;
         
         if (l === "coneb" || l === "cone") {
+            if (!coneOn) return;
             let coneType = "normal";
-            let pose = activeFrame || bSel.value;
+            let pose = activeFrame || bSel.value || mSel.value;
             if (pose.includes("yap")) coneType = "yap_" + (animIndex + 1);
             else if (pose.includes("karate")) coneType = "karate";
             else if (pose.includes("scream")) coneType = "scream";
             
-            let suffix = (l === "coneb" && (coneType.startsWith("yap") || coneType === "none")) ? "blank" : coneType;
+            let suffix = (l === "coneb" && (coneType.startsWith("yap") || coneType === "normal")) ? "blank" : coneType;
             drawLayer(l + "_" + suffix);
         } 
         else if (l === "body") drawLayer(activeFrame || bSel.value);
